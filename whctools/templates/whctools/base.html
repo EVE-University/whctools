@@ -1,0 +1,12 @@
+{% extends 'allianceauth/base.html' %}
+{% load i18n %}
+
+{% block page_title %}{% translate "whctools" %}{% endblock %}
+
+{% block content %}
+    <div class="whctools">
+        <h1 class="page-header text-center">{% translate "whctools" %}</h1>
+
+        {% block details %}{% endblock %}
+    </div>
+{% endblock %}

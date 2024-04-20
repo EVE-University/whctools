@@ -1,0 +1,74 @@
+stages:
+  - checks
+  - test
+  - deploy
+
+pre-commit:
+  stage: checks
+  image: python:3.10-bullseye
+  variables:
+    PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
+  cache:
+    paths:
+      - ${PRE_COMMIT_HOME}
+  script:
+    - pip install pre-commit
+    - pre-commit run --all-files
+
+# pylint:
+#   stage: checks
+#   extends: .tox_setup
+#   image: python:3.10-bullseye
+#   script:
+#   - tox -e pylint
+
+.tox_setup:
+  before_script:
+    - apt-get update
+    - apt-get install redis-server -y
+    - redis-server --daemonize yes
+    - python -V
+    - pip install tox
+
+test-py38-dj40:
+  extends: .tox_setup
+  image: python:3.8-bullseye
+  script:
+    - tox -e py38-django40
+
+test-py39-dj40:
+  extends: .tox_setup
+  image: python:3.9-bullseye
+  script:
+    - tox -e py39-django40
+
+test-py310-dj40:
+  extends: .tox_setup
+  image: python:3.10-bullseye
+  script:
+    - tox -e py310-django40
+    - bash <(curl -s https://codecov.io/bash)
+
+test-py311-dj40:
+  extends: .tox_setup
+  image: python:3.11-bullseye
+  script:
+  - tox -e py311-django40
+  - bash <(curl -s https://codecov.io/bash)
+
+test-py311-dj42:
+  extends: .tox_setup
+  image: python:3.11-bullseye
+  script:
+    - tox -e py311-django42
+
+deploy-pypi:
+  stage: deploy
+  image: python:3.10-bullseye
+  before_script:
+    - pip install twine wheel build
+  script:
+    - python -m build
+    - twine upload dist/*
+  only:
+    - tags
