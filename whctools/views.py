@@ -70,7 +70,6 @@ def index(request):
                     "is_shared": macharacter.is_shared,
                 }
             )
-    unregistered_chars = sorted(unregistered_chars)
 
     try:
         main_character_id = request.user.profile.main_character.character_id
