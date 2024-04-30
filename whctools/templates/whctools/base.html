@@ -1,12 +1,70 @@
 {% extends 'allianceauth/base.html' %}
 {% load i18n %}
 
-{% block page_title %}{% translate "whctools" %}{% endblock %}
+{% block page_title %}{% translate "WHC Applications" %}{% endblock %}
 
 {% block content %}
     <div class="whctools">
-        <h1 class="page-header text-center">{% translate "whctools" %}</h1>
+        <h1 class="page-header text-center">{% translate "WHC Applications" %}</h1>
 
         {% block details %}{% endblock %}
     </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+    .whctools-tr {
+        border-top: solid 1px #797777;
+    }
+
+    .whctools-tr > td {
+        vertical-align:middle !important;
+    }
+
+    .media {
+        overflow: hidden;
+        zoom: 1;
+        outline: solid #375a7f 1px;
+        border-radius: 3px;
+    }
+
+    .whcbutton {
+        padding-top: 2px;
+        padding-bottom: 2px;
+        padding-left: 10px;
+        padding-right: 10px;
+        margin-bottom: 5px;
+    }
+
+    .nav-tabs > li > a:hover {
+        border-color: #375a7f;
+        background: #375a7f;
+    }
+
+    .whcpanel {
+        border-top-left-radius: 0px
+    }
+
+    img {
+        max-width: none;
+        margin: 5px
+    }
+
+    .whctools-warning {
+        color: #e89052;
+    }
+
+    .whctools-error {
+        color: #dd3820;
+    }
+
+    .whctools-good {
+        color: #37d158;
+    }
+
+    img.whctools-image-disabled-class {
+        filter: grayscale(100%);
+    }
+</style>
 {% endblock %}

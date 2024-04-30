@@ -4,21 +4,78 @@
 
 {% block details %}
 
-    <div class="panel panel-primary">
-        <div class="panel-heading">
-            <h3 class="panel-title">text</h3>
+{% if is_officer %}
+<ul class="nav nav-tabs">
+    <li class="active"><a>My Apps</a></li>
+    <li class="inactive"><a href="/whctools/staff">Staff</a></li>
+</ul>
+{% endif %}
+
+<div class="tab-content">
+    <div id="home" class="whcpanel panel panel-primary tab-pane active">
+        <div class="whcpanel panel-heading">
+            <h3 class="panel-title">Applications</h3>
         </div>
         <div class="panel-body" style="min-height: 100px;">
-            {{ text }}
+                    {% if auth_characters %}
+                        {% for auth_char in  auth_characters%}
+                                <div class="media">
+                                    <div class="media-left media-middle">
+                                    <img src="{{ auth_char.portrait_url }}" class="media-object {% if not auth_char.is_shared%}whctools-image-disabled-class{% endif %}">
+                                    </div>
+                                    <div class="media-body">
+                                    <h4 class="media-heading">{{auth_char.char_name}}</h4>
+                                    {% if  auth_char.is_shared%}
+                                    {% comment %} <p>{{ auth_char.rejected_reason }}</p>
+                                    <p>{{ auth_char.rejected_timeout }}</p> {% endcomment %}
+                                        {% if auth_char.application.member_state == auth_char.application.MembershipStates.NOTAMEMBER%}
+                                            <p class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i> Please check you have the required skills before applying or the applicaion will be rejected and suject to a timeout!</p>
+                                            <a href="/whctools/apply/{{auth_char.char_id}}" class="whcbutton btn btn-primary" role="button">Apply</a>
+                                        {% endif %}
+                                        {% if auth_char.application.member_state == auth_char.application.MembershipStates.APPLIED%}
+                                            <p class="whctools-good">You have applied and are awaiting approval!</p>
+                                            <p class="whctools-good">If you choose to withdraw the application you will be subject to a short timeout before you can reapply.</p>
+                                            <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Withdraw</a>
+                                        {% endif %}
+                                        {% if auth_char.application.member_state == auth_char.application.MembershipStates.REJECTED%}
+                                            <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>You are currently under a timeout for: {{ auth_char.application.get_reject_reason_display }}</p>
+                                            <p class="whctools-error">You will be able to apply again in: {{auth_char.application.reject_timeout|timeuntil}}</p>
+                                        {% endif %}
+                                        {% if auth_char.application.member_state == auth_char.application.MembershipStates.ACCEPTED%}
+                                        <p class="whctools-good">You are a member!</p>
+                                        <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Leave</a>
+                                        {% endif %}
+                                    {% else %}
+                                    <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
+                                        This character has not been shared in Member Audit!
+                                    </p>
+                                    {% endif %}
+                                    </div>
+                                </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% if unregistered_chars %}
+                        {% for unreg_char in unregistered_chars %}
+                                <div class="media">
+                                    <div class="media-left media-middle">
+                                    <img src="{{ unreg_char.portrait_url }}" class="media-object whctools-image-disabled-class">
+                                    </div>
+                                    <div class="media-body">
+                                    <h4 class="media-heading">{{unreg_char.char_name}}</h4>
+                                    <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>
+                                        This character has not been added to Member Audit!
+                                    </p>
+                                    </div>
+                                </div>
+                        {% endfor %}
+                    {% endif %}
         </div>
     </div>
+</div>
 
 {% endblock %}
 
 {% block extra_javascript %}
-{% endblock %}
-
-{% block extra_css %}
 {% endblock %}
 
 {% block extra_script %}
