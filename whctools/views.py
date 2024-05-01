@@ -90,17 +90,23 @@ def index(request):
 @permission_required("whctools.whc_officer")
 def staff(request):
     """Render staff view."""
-    chars_applied = Applications.objects.filter(
-        member_state=Applications.MembershipStates.APPLIED
-    ).order_by("last_updated")
+
+    chars_applied = (
+        Applications.objects.filter(member_state=Applications.MembershipStates.APPLIED)
+        .select_related("eve_character__memberaudit_character")
+        .order_by("last_updated")
+    )
     chars_rejected = (
         Applications.objects.filter(member_state=Applications.MembershipStates.REJECTED)
+        .select_related("eve_character__memberaudit_character")
         .order_by("last_updated")
         .reverse()
     )
-    chars_accepted = Applications.objects.filter(
-        member_state=Applications.MembershipStates.ACCEPTED
-    ).order_by("eve_character__character_name")
+    chars_accepted = (
+        Applications.objects.filter(member_state=Applications.MembershipStates.ACCEPTED)
+        .select_related("eve_character__memberaudit_character")
+        .order_by("eve_character__character_name")
+    )
 
     context = {
         "accepted_chars": chars_accepted,
