@@ -29,7 +29,7 @@
                                     {% comment %} <p>{{ auth_char.rejected_reason }}</p>
                                     <p>{{ auth_char.rejected_timeout }}</p> {% endcomment %}
                                         {% if auth_char.application.member_state == auth_char.application.MembershipStates.NOTAMEMBER%}
-                                            <p class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i> Please check you have the required skills before applying or the applicaion will be rejected and suject to a timeout!</p>
+                                            <p class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i> Please check you have the required skills before applying or the application will be rejected and subject to a timeout!</p>
                                             <a href="/whctools/apply/{{auth_char.char_id}}" class="whcbutton btn btn-primary" role="button">Apply</a>
                                         {% endif %}
                                         {% if auth_char.application.member_state == auth_char.application.MembershipStates.APPLIED%}
