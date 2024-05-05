@@ -14,6 +14,12 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
+from whctools.app_settings import (
+    LARGE_REJECT,
+    MEDIUM_REJECT,
+    SHORT_REJECT,
+    TRANSIENT_REJECT,
+)
 from whctools.models import Applications
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -112,6 +118,12 @@ def staff(request):
         "accepted_chars": chars_accepted,
         "rejected_chars": chars_rejected,
         "applied_chars": chars_applied,
+        "reject_timers": {
+            "large_reject": LARGE_REJECT,
+            "medium_reject": MEDIUM_REJECT,
+            "short_reject": SHORT_REJECT,
+            "transient_reject": TRANSIENT_REJECT,
+        },
     }
     return render(request, "whctools/staff.html", context)
 
@@ -185,8 +197,8 @@ def withdraw(request, char_id):
         eve_char_applications.member_state = Applications.MembershipStates.REJECTED
         eve_char_applications.reject_reason = Applications.RejectionStates.WITHDRAWN
         eve_char_applications.reject_timeout = timezone.now() + datetime.timedelta(
-            minutes=2
-        )  # @@@ Make this into a variable
+            minutes=TRANSIENT_REJECT
+        )
         notify.warning(
             request.user,
             "WHC application",
