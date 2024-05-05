@@ -49,3 +49,23 @@ class Applications(models.Model):
     reject_timeout = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+
+
+class Acls(models.Model):
+    """
+    model of ACLs that are 'managed' by this plugin (managed being a very loose term)
+    """
+
+    name = models.CharField(max_length=255, null=True, blank=True, primary_key=True)
+    description = models.TextField(null=True, blank=True)
+
+
+class KnownAclAccess(models.Model):
+    """
+    model of members and their alts and what Acls they have accessed to (managed through the django created ManyToMany intermediate table)
+    """
+
+    eve_character = models.OneToOneField(
+        EveCharacter, on_delete=models.CASCADE, primary_key=True
+    )
+    acls = models.ManyToManyField(Acls)

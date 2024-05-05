@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Known Members of ACL {{ acl_name }}</title>
+    <style>
+        .member {
+            margin-bottom: 10px;
+        }
+        .main {
+            margin-left: 10px;
+        }
+        .alternate {
+            margin-left: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Known Members of ACL {{ acl_name }}</h1>
+    <p> The following charcters are known to have acces to the ACl {{ acl_name }} - This list should be considered the truth, and if the ACL in game differs it should be adjusted to match this list!</p>
+    {% for entity in members %}
+    <div class="member">
+        <p>{{ entity.main.name }}</p>
+
+        <ul>
+            <li class="main"> <span><img url={{entity.main.portrait_url_32}} {{ entity.main.name }} - [ {{ entity.main.corporation.name}} - {{ entity.main.alliance.name}} ]</span></li>
+            {% for alt in main.alts %}
+            <li class="alternate"><span><img url={{alt.portrait_url_32}} {{ alt.name }} - [ {{ alt.corporation.name}} - {{ alt.alliance.name}} ]</span></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</body>
+</html>

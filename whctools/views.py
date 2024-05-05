@@ -9,12 +9,13 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from allianceauth.eveonline.models import EveCharacter
+from allianceauth.framework.api.user import get_main_character_from_eve_character
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
-from whctools.models import Applications
+from whctools.models import Acls, Applications, KnownAclAccess
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -264,3 +265,24 @@ def reset(request, char_id):
         )
 
     return redirect("/whctools/staff")
+
+
+@login_required
+@permission_required("whctools.whc_officer")
+def get_current_acl_truth(request, acl_name="whc"):
+
+    acl_obj = Acls.object.get(primary_key=acl_name)
+    members_on_acl = KnownAclAccess.object.filter(acls=acl_obj)
+
+    output = {}
+    for member in members_on_acl:
+        main = get_main_character_from_eve_character(member.eve_character.name)
+        alts_with_acl_access = output.setdefault(main, {})
+        if member.eve_character.name != main.name:
+            alts_with_acl_access["main"] = main
+        else:
+            alts_with_acl_access.setdefault("alts", []).append(member.eve_character)
+
+    context = {"members": output, "acl_name": acl_name}
+
+    return render(request, "whctools/list_acl_members.html", context)
