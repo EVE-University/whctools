@@ -216,6 +216,10 @@ def accept(request, char_id):
             "WHC application",
             f"Your application to the WHC Community on {whcapplication[0].eve_character.character_name} has been approved.",
         )
+        # @@@ - need to remove hardcoding
+        acl_obj = Acls.objects.get(pk="whc")
+        character_acls = KnownAclAccess(eve_character=whcapplication[0].eve_character)
+        character_acls.acls.add(acl_obj)
 
     return redirect("/whctools/staff")
 
@@ -232,6 +236,13 @@ def reject(request, char_id, reason, days):
             whcapplication[0].reject_reason = Applications.RejectionStates.SKILLS
         elif reason == "removed":
             whcapplication[0].reject_reason = Applications.RejectionStates.REMOVED
+            # assuming removed is to remove a currently in the whc member:
+            # @@@ - need to remove hardcoding
+            acl_obj = Acls.objects.get(pk="whc")
+            character_acls = KnownAclAccess(
+                eve_character=whcapplication[0].eve_character
+            )
+            character_acls.acls.remove(acl_obj)
         else:
             whcapplication[0].reject_reason = Applications.RejectionStates.OTHER
         whcapplication[0].reject_timeout = timezone.now() + datetime.timedelta(
@@ -271,7 +282,7 @@ def reset(request, char_id):
 @permission_required("whctools.whc_officer")
 def get_current_acl_truth(request, acl_name="whc"):
 
-    acl_obj = Acls.object.get(primary_key=acl_name)
+    acl_obj = Acls.object.get(pk=acl_name)
     members_on_acl = KnownAclAccess.object.filter(acls=acl_obj)
 
     output = {}
