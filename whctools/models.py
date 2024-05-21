@@ -50,6 +50,13 @@ class Applications(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
+    def __str__(self) -> str:
+        return self.eve_character.character_name
+
+    class Meta:
+        ordering = ["eve_character__character_name"]
+        verbose_name_plural = "Applications"
+
 
 class Acls(models.Model):
     """

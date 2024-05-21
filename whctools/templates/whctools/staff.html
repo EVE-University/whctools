@@ -43,8 +43,8 @@
                             </td>
                             <td>
                                 <a href="/whctools/staff/action/{{char.eve_character.id}}/accept" class="whcbutton btn btn-primary" role="button">Accept</a>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/skills/5" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/other/30" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
+                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/skills/{{reject_timers.short_reject}}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
+                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/other/{{reject_timers.medium_reject}}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -68,7 +68,7 @@
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
                             </td>
                             <td>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/removed/365" class="whcbutton btn btn-danger" role="button">Remove</a>
+                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/removed/{{reject_timers.large_reject}}" class="whcbutton btn btn-danger" role="button">Remove</a>
                             </td>
                         </tr>
                         {% endfor %}
