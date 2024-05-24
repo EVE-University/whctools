@@ -9,13 +9,13 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from allianceauth.eveonline.models import EveCharacter
-from allianceauth.framework.api.user import get_main_character_from_eve_character
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
+from .utils import remove_character_from_acl, add_character_to_acl
 
 from whctools import __title__
-from whctools.models import Acls, Applications, KnownAclAccess
+from whctools.models import Acl, Applications, ACLHistory, AclHistoryRequest
 from whctools.app_settings import (
     LARGE_REJECT,
     MEDIUM_REJECT,
@@ -30,7 +30,6 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 @permission_required("whctools.basic_access")
 def index(request):
     """Render index view."""
-    logger.debug(request.user)
     owned_chars_query = (
         EveCharacter.objects.filter(character_ownership__user=request.user)
         .select_related("memberaudit_character", "applications")
@@ -97,6 +96,8 @@ def index(request):
 @permission_required("whctools.whc_officer")
 def staff(request):
     """Render staff view."""
+    
+    existing_acls = Acl.objects.all()
 
     chars_applied = (
         Applications.objects.filter(member_state=Applications.MembershipStates.APPLIED)
@@ -119,6 +120,7 @@ def staff(request):
         "accepted_chars": chars_accepted,
         "rejected_chars": chars_rejected,
         "applied_chars": chars_applied,
+        "existing_acls": existing_acls,
         "reject_timers": {
             "large_reject": LARGE_REJECT,
             "medium_reject": MEDIUM_REJECT,
@@ -127,7 +129,6 @@ def staff(request):
         },
     }
     return render(request, "whctools/staff.html", context)
-
 
 @login_required
 @permission_required("whctools.basic_access")
@@ -169,7 +170,7 @@ def apply(request, char_id):
 
 @login_required
 @permission_required("whctools.basic_access")
-def withdraw(request, char_id):
+def withdraw(request, char_id, acl_name="WHC"):
     """Remove Application"""
     owned_chars_query = (
         EveCharacter.objects.filter(
@@ -188,10 +189,12 @@ def withdraw(request, char_id):
     if eve_char_applications.member_state == Applications.MembershipStates.ACCEPTED:
         # Dont apply penalty to leaving members
         eve_char_applications.member_state = Applications.MembershipStates.NOTAMEMBER
+        logger.debug(f"Removing {eve_char_applications.eve_character.character_name} from {acl_name}")
+        remove_character_from_acl(eve_char_applications.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_applications.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
         notify.info(
             request.user,
             "WHC application",
-            f"You have left the WHC Community on {owned_chars_query[0].character_name}.",
+            f"You have left the WHC Community on {eve_char_applications.eve_character.character_name}.",
         )
 
     else:
@@ -203,7 +206,7 @@ def withdraw(request, char_id):
         notify.warning(
             request.user,
             "WHC application",
-            f"You have withdrawn from the WHC Community on {owned_chars_query[0].character_name}. You will now be subject to a short timer before you can reapply.",
+            f"You have withdrawn from the WHC Community on {eve_char_applications.eve_character.character_name}. You will now be subject to a short timer before you can reapply.",
         )
 
     eve_char_applications.save()
@@ -213,50 +216,55 @@ def withdraw(request, char_id):
 
 @login_required
 @permission_required("whctools.whc_officer")
-def accept(request, char_id):
+def accept(request, char_id, acl_name=""):
 
     whcapplication = Applications.objects.filter(
         eve_character_id=char_id
     ).select_related("eve_character")
 
+
     if whcapplication:
-        whcapplication[0].member_state = Applications.MembershipStates.ACCEPTED
-        whcapplication[0].save()
-        main_user = whcapplication[0].eve_character.character_ownership.user
+        member_application = whcapplication[0]
+        old_state = member_application.member_state
+        member_application.member_state = Applications.MembershipStates.ACCEPTED
+        member_application.save()
+        main_user = member_application.eve_character.character_ownership.user
+        add_character_to_acl(acl_name, member_application.eve_character, old_state, Applications.MembershipStates.ACCEPTED, ACLHistory.ApplicationStateChangeReason.ACCEPTED)
+
         notify.success(
             main_user,
             "WHC application",
-            f"Your application to the WHC Community on {whcapplication[0].eve_character.character_name} has been approved.",
+            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been approved.",
         )
-        # @@@ - need to remove hardcoding
-        acl_obj = Acls.objects.get(pk="whc")
-        character_acls = KnownAclAccess(eve_character=whcapplication[0].eve_character)
-        character_acls.acls.add(acl_obj)
 
     return redirect("/whctools/staff")
 
 
+
+
+# @@@ TODO - Add to the views.html templates the ability to remove from specific acls
 @login_required
 @permission_required("whctools.whc_officer")
-def reject(request, char_id, reason, days):
+def reject(request, char_id, reason, days, acl_name="WHC"):
 
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
 
     if whcapplication:  # @@@ move this into template
+        old_state = whcapplication[0].member_state
         whcapplication[0].member_state = Applications.MembershipStates.REJECTED
         if reason == "skills":
             whcapplication[0].reject_reason = Applications.RejectionStates.SKILLS
         elif reason == "removed":
+            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
             whcapplication[0].reject_reason = Applications.RejectionStates.REMOVED
-            # assuming removed is to remove a currently in the whc member:
-            # @@@ - need to remove hardcoding
-            acl_obj = Acls.objects.get(pk="whc")
-            character_acls = KnownAclAccess(
-                eve_character=whcapplication[0].eve_character
-            )
-            character_acls.acls.remove(acl_obj)
+
+            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+
+
         else:
             whcapplication[0].reject_reason = Applications.RejectionStates.OTHER
+            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
+            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
         whcapplication[0].reject_timeout = timezone.now() + datetime.timedelta(
             days=int(days)
         )
@@ -271,16 +279,24 @@ def reject(request, char_id, reason, days):
     return redirect("/whctools/staff")
 
 
+
+
 @login_required
 @permission_required("whctools.whc_officer")
-def reset(request, char_id):
+def reset(request, char_id, acl_name="WHC"):
 
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
 
     if whcapplication:
+        old_state = whcapplication[0].member_state
         whcapplication[0].member_state = Applications.MembershipStates.NOTAMEMBER
         whcapplication[0].save()
         main_user = whcapplication[0].eve_character.character_ownership.user
+        
+        if old_state == Applications.MembershipStates.ACCEPTED:
+            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
+            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+
         notify.success(
             main_user,
             "WHC application",
@@ -292,20 +308,58 @@ def reset(request, char_id):
 
 @login_required
 @permission_required("whctools.whc_officer")
-def get_current_acl_truth(request, acl_name="whc"):
+def list_acl_members(request, acl_pk=""):
 
-    acl_obj = Acls.object.get(pk=acl_name)
-    members_on_acl = KnownAclAccess.object.filter(acls=acl_obj)
+    acl_obj = Acl.objects.get(pk=acl_pk)
+    if not acl_obj:
+        return redirect("/whctools")
+    members_on_acl = acl_obj.characters.all()
+    date_selected = None
+    parsed_acl_history = []
 
-    output = {}
-    for member in members_on_acl:
-        main = get_main_character_from_eve_character(member.eve_character.name)
-        alts_with_acl_access = output.setdefault(main, {})
-        if member.eve_character.name != main.name:
-            alts_with_acl_access["main"] = main
-        else:
-            alts_with_acl_access.setdefault("alts", []).append(member.eve_character)
+    if request.method == 'POST':
+        logger.debug("POST request for acl history")
+        form = AclHistoryRequest(request.POST)
+        if form.is_valid():
+            
+            date_selected = form.cleaned_data.get("date_of_change")
+            acl_history_entries = ACLHistory.objects.filter(date_of_change__gte=date_selected)
+            logger.debug(f"Pulling ACL history after {date_selected} for {acl_pk}")
+            parsed_acl_history = {}
+            last_known_change = None
+            for entry in acl_history_entries:
+                if last_known_change is None or entry.date_of_change > last_known_change:
+                    new_state = Applications.MembershipStates(entry.new_state)
+                    if new_state in [Applications.MembershipStates.NOTAMEMBER, Applications.MembershipStates.APPLIED, Applications.MembershipStates.REJECTED]:
+                        action = "Remove"
+                    else:
+                        action = "Add"
+                    last_known_change = entry.date_of_change
+                    parsed_acl_history[entry.character.character_name]  = {
+                        "date": entry.date_of_change,
+                        "portrait_url": entry.character.portrait_url(32),
+                        "name": entry.character.character_name,
+                        "state":new_state.name,
+                        "action": action
+                    }
+            
+            parsed_acl_history = list(parsed_acl_history.values())
 
-    context = {"members": output, "acl_name": acl_name}
+
+    context = {
+        "members": sorted([{
+            "name": m.character_name,
+            "corp": m.corporation_name,
+            "alliance": m.alliance_name,
+            "portrait_url": m.portrait_url(32),
+        } for m in members_on_acl], key=lambda x: x["name"]), 
+        "acl_name": acl_pk,
+        "date_selected": date_selected,
+        "acl_changes": parsed_acl_history,
+        "acl_history_request": AclHistoryRequest()
+        }
 
     return render(request, "whctools/list_acl_members.html", context)
+
+
+

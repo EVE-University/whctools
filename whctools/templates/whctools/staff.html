@@ -20,6 +20,8 @@
                 <li class="active"><a data-toggle="pill" href="#applications">Applications</a></li>
                 <li><a data-toggle="pill" href="#accepted">Accepted</a></li>
                 <li><a data-toggle="pill" href="#rejected">Rejected</a></li>
+                <li><a data-toggle="pill" href="#acl_admin">List ACLs</a></li>
+                
               </ul>
             <div class="tab-content">
                 <div id="applications" class="panel panel-default tab-pane active">
@@ -42,7 +44,12 @@
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
                             </td>
                             <td>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/accept" class="whcbutton btn btn-primary" role="button">Accept</a>
+                                <select class="acl-dropdown" data-character-id="{{ char.eve_character.id}}">
+                                    {% for acl in existing_acls %}
+                                        <option value="{{ acl.name }}">{{ acl.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="whcbutton btn btn-primary accept-button" role="button">Accept</button>
                                 <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/skills/{{reject_timers.short_reject}}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
                                 <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/other/{{reject_timers.medium_reject}}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
                             </td>
@@ -110,16 +117,64 @@
                         {% endfor %}
                     </table>
                 </div>
+                <div id="acl_admin" class="panel panel-default tab-pane">
+                    <table class="table">
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                        {% for acl in existing_acls %}
+                        <tr class="whctools-tr">
+                            <td>
+                                {{acl.name}}
+                            </td>
+                            <td>{{acl.description}}</td>
+                            <td> <a href="/whctools/staff/action/{{acl.pk}}/view" class="whcbutton btn btn-success" role="button">View Members</a> </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+</div>
+
 </div>
 
 
 {% endblock %}
 
 {% block extra_javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle Accept button click
+    function handleAcceptClick(event) {
+        event.preventDefault();
+
+        // Find the corresponding dropdown and character ID
+        const button = event.target;
+        const row = button.closest('tr');
+        const dropdown = row.querySelector('.acl-dropdown');
+        const selectedAcl = dropdown.value;
+        const characterId = dropdown.getAttribute('data-character-id');
+
+        // Construct the URL
+        const url = `/whctools/staff/action/${characterId}/accept/${selectedAcl}`;
+
+        // Redirect to the constructed URL
+        window.location.href = url;
+    }
+
+    // Attach event listener to all Accept buttons
+    const acceptButtons = document.querySelectorAll('.accept-button');
+    acceptButtons.forEach(button => {
+        button.addEventListener('click', handleAcceptClick);
+    });
+});
+</script>
 {% endblock %}
 
 {% block extra_script %}
 {% endblock %}
+

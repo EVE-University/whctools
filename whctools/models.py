@@ -1,8 +1,13 @@
 """Models."""
 
 from django.db import models
+from django import forms
 
 from allianceauth.eveonline.models import EveCharacter
+
+
+
+
 
 
 class General(models.Model):
@@ -35,7 +40,7 @@ class Applications(models.Model):
         SKILLS = 1, "Insufficient Skills"
         WITHDRAWN = 2, "Withdrawn Application"
         REMOVED = 3, "Removed From Community"
-        OTHER = 99, "Undisclosed"
+        OTHER = 99, "Undisclosed"   
 
     eve_character = models.OneToOneField(
         EveCharacter, on_delete=models.CASCADE, primary_key=True
@@ -58,21 +63,52 @@ class Applications(models.Model):
         verbose_name_plural = "Applications"
 
 
-class Acls(models.Model):
+class Acl(models.Model):
     """
     model of ACLs that are 'managed' by this plugin (managed being a very loose term)
     """
 
-    name = models.CharField(max_length=255, null=True, blank=True, primary_key=True)
+    name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
+    characters = models.ManyToManyField(EveCharacter)
+    
+    def __str__(self):
+        return self.name
+    
+
+class ACLHistory(models.Model):
 
 
-class KnownAclAccess(models.Model):
-    """
-    model of members and their alts and what Acls they have accessed to (managed through the django created ManyToMany intermediate table)
-    """
 
-    eve_character = models.OneToOneField(
-        EveCharacter, on_delete=models.CASCADE, primary_key=True
+    class ApplicationStateChangeReason(models.IntegerChoices):
+        NONE = 0, "No Change / Initial Acceptance"
+        ACCEPTED = 1, "Application Accepted"
+        LEFT_UNI = 2, "Character left Uni or Uni Affiliated"
+        REMOVED = 3, "Character was removed from ACL by an Officer"
+        LEFT_GROUP = 4, "Left on their own choice"
+        OTHER = 99, "Other: See details"
+
+    date_of_change=models.DateTimeField()
+    old_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
     )
-    acls = models.ManyToManyField(Acls)
+    new_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+    )
+    reason_for_change = models.IntegerField(
+        choices=ApplicationStateChangeReason.choices, default = ApplicationStateChangeReason.NONE
+    ),
+    changed_by = models.CharField(max_length=225, null=False, blank=True)
+    acl = models.ForeignKey(Acl, on_delete=models.CASCADE, related_name='changes')
+    character = models.ForeignKey(EveCharacter, null=True, on_delete=models.SET_NULL)
+
+class DateTimeInput(forms.DateTimeInput):
+    input_type = 'datetime-local'
+
+class AclHistoryRequest(forms.ModelForm):
+    class Meta:
+        model=ACLHistory
+        fields=["date_of_change"]
+        widgets = {
+            "date_of_change": DateTimeInput()
+        }
