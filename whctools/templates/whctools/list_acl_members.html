@@ -1,0 +1,95 @@
+
+{% extends 'whctools/base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block details %}
+<ul class="nav nav-tabs">
+    <li class="inactive"><a href="/whctools">Apps</a></li>
+    <li class="active"><a>Staff</a></li>
+</ul>
+
+<div class="tab-content">
+    <div id="staff" class="whcpanel panel panel-primary tab-pane active">
+        <div class="whcpanel panel-heading">
+            <h3 class="panel-title">Members of the {{ acl_name }} ACL list</h3>
+        </div>
+        <div class="panel-body" style="min-height: 100px;">
+
+            {% comment %} @@@ Probably would be better to move this into individual files {% endcomment %}
+            <ul class="nav nav-pills">
+                <li><a href="/whctools/staff">Back</a></li>
+                <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#all_members">All Members</a></li>
+                <li {% if date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#after_date">Filter After</a></li>
+              </ul>
+            <div class="tab-content">
+                <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
+                    <h1>All Known Members of {{ acl_name }} Access Control List</h1>
+                    <p> The following charcters are known to have acces to the ACl {{ acl_name }} - This list should be considered the truth, and if the ACL in game differs it should be adjusted to match this list!</p>
+                    <table class="table">
+                        <tr>
+                            <th>Portrait</th>
+                            <th>Character</th>
+                            <th>Corp</th>
+                            <th>Alliance</th>
+                        </tr>
+                        {% for member in members %}
+                        <tr>
+                            <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
+                            <td> {{member.name}} </td>
+                            <td> {{member.corp}}</td>
+                            <td> {{member.alliance}}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div id="after_date" class="panel panel-default tab-pane {% if date_selected %} active {% endif %}">
+                    <form method="post" class="form-inline">
+                        {% csrf_token %}
+                        <div class="form-group mb-2">
+                            <label for="{{ acl_history_request.date_of_change.id_for_label }}">Made On</label>
+                            {{ acl_history_request.date_of_change }}
+                            {% if acl_history_request.date_of_change.errors %}
+                                <div class="text-danger">
+                                    {{ acl_history_request.date_of_change.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary mb-2">Get History</button>
+                    </form>
+                {% if date_selected %}
+                    <table class="table">
+                        <tr>
+                            <th>Time Last Changed</th>
+                            <th>Portrait</th>
+                            <th>Name</th>
+                            <th>Last State</th>
+                            <th>Action To Take</th>
+
+                        </tr>
+                        {% for member in acl_changes %}
+                        <tr>
+                            <td> {{member.date}}
+                            <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
+                            <td> {{member.name}} </td>
+                            <td> {{member.state}} </td>
+                            <td><class="whcbutton btn {% if member.action == 'remove' %} btn-good {% else %} btn-success {% endif %}" > {{member.action}} </div></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+
+{% endblock %}
+
+{% block extra_javascript %}
+{% endblock %}
+
+{% block extra_script %}
+{% endblock %}
