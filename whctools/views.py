@@ -340,7 +340,8 @@ def list_acl_members(request, acl_pk=""):
                         "portrait_url": entry.character.portrait_url(32),
                         "name": entry.character.character_name,
                         "state":new_state.name,
-                        "action": action
+                        "action": action,
+                        "reason": entry.get_reason_for_change_display()
                     }
             
             parsed_acl_history = list(parsed_acl_history.values())

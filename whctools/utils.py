@@ -15,7 +15,6 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
     acl_object = Acl.objects.filter(pk=acl_name)
     if acl_object:
         characters = acl_object[0].characters.all()
-        logger.debug(f"DEBUGDEBUGDEBUG {char_id}")
         for char in characters:
             if char.character_id == char_id:
                 logger.debug(f"Removing {char.character_name} form {acl_name} - setting to {Applications.MembershipStates(to_state).name} for {reason.name}")
@@ -25,7 +24,7 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
                     date_of_change=timezone.now(),
                     old_state = from_state,
                     new_state = to_state, 
-                    #reason_for_change = reason,
+                    reason_for_change = reason,
                     changed_by = "ToDo",
                     acl=acl_object[0]
                 )
@@ -42,7 +41,7 @@ def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
                 date_of_change=timezone.now(),
                 old_state=old_state,
                 new_state=new_state,
-                #reason_for_change=reason,
+                reason_for_change=reason,
                 changed_by="Acceptance (todo)",
                 acl=acl_obj
             )

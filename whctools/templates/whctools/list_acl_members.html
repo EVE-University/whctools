@@ -64,6 +64,7 @@
                             <th>Portrait</th>
                             <th>Name</th>
                             <th>Last State</th>
+                            <th>Reason for Change</th>
                             <th>Action To Take</th>
 
                         </tr>
@@ -73,7 +74,8 @@
                             <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
                             <td> {{member.name}} </td>
                             <td> {{member.state}} </td>
-                            <td><class="whcbutton btn {% if member.action == 'remove' %} btn-good {% else %} btn-success {% endif %}" > {{member.action}} </div></td>
+                            <td> {{member.reason}} </td>
+                            <td><div class="whctools-acl-change {% if member.action == 'Remove' %} acl-change-remove {% else %} acl-change-add {% endif %}" > {{member.action}} </div></td>
                         </tr>
                         {% endfor %}
                     </table>

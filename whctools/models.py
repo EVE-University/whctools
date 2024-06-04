@@ -40,6 +40,7 @@ class Applications(models.Model):
         SKILLS = 1, "Insufficient Skills"
         WITHDRAWN = 2, "Withdrawn Application"
         REMOVED = 3, "Removed From Community"
+        LEFT_ALLIANCE = 4, "Left Alliance"
         OTHER = 99, "Undisclosed"   
 
     eve_character = models.OneToOneField(
@@ -97,7 +98,7 @@ class ACLHistory(models.Model):
     )
     reason_for_change = models.IntegerField(
         choices=ApplicationStateChangeReason.choices, default = ApplicationStateChangeReason.NONE
-    ),
+    )
     changed_by = models.CharField(max_length=225, null=False, blank=True)
     acl = models.ForeignKey(Acl, on_delete=models.CASCADE, related_name='changes')
     character = models.ForeignKey(EveCharacter, null=True, on_delete=models.SET_NULL)
