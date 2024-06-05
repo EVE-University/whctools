@@ -5,7 +5,7 @@ from django import forms
 
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
-
+from memberaudit.models import SkillSet
 
 
 
@@ -101,7 +101,7 @@ class Acl(models.Model):
     name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
     characters = models.ManyToManyField(EveCharacter)
-
+    skill_sets = models.ManyToManyField(SkillSet)
     
     def __str__(self):
         return self.name

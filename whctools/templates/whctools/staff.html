@@ -31,29 +31,51 @@
                             <th>Character</th>
                             <th>Main</th>
                             <th>App Age</th>
-                            <th>MA link</th>
+                            <th>Skills Check</th>
                             <th>Action</th>
                         </tr>
                         {% for char in applied_chars %}
                         <tr class="whctools-tr">
                             <td>
-                                <img src="{{ char.eve_character.portrait_url }}">
+                                <img src="{{ char.application.eve_character.portrait_url }}">
                             </td>
-                            <td>{{char.eve_character.character_name}}</td>
-                            <td><i>{{char.get_main_character.character_name}}</i></td>
-                            <td>{{char.last_updated|timesince}}</td>
+                            <td>{{char.application.eve_character.character_name}}</td>
+                            <td><i>{{char.application.get_main_character.character_name}}</i></td>
+                            <td>{{char.application.last_updated|timesince}}</td>
                             <td>
-                                <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
+                                <button class="whcbutton btn btn-primary" id="openSkillcheckPopup">Check Skills</button>
+
+                                <div class="whctools-skillcheck-popup-overlay" id="skillcheckPopupOverlay"></div>
+                                <div class="whctools-skillcheck-popup" id="skillcheckPopup">
+                                    <h3>Skill Set Checks for <u>{{char.application.eve_character.character_name}}</u> related characters</h3>
+                                    <table class="table">
+                                        <tr class="whctools-tr">
+                                            <th>Character Name</th>
+                                            {% for set in skillset_names %}
+                                            <th> {{ set }} </th>
+                                            {% endfor %}
+                                        </tr>
+                                        {% for alt_name, skill_sets in char.skill_sets.items %}
+                                        <tr>
+                                            <td>{{ alt_name }}</td>
+                                            {% for skill_check in skill_sets.values %}
+                                            <td style="text-align: center;"><i {% if skill_check %}class="fas fa-check" style="color: green;" {% else %}class="fas fa-times" style="color: red;" {% endif %} ></i></td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor%}
+                                    </table>
+                                    <button class="whcbutton btn btn-danger" id="closeSkillcheckPopup">Close</button>
+                                </div>
                             </td>
                             <td>
-                                <select class="acl-dropdown" data-character-id="{{ char.eve_character.id}}">
+                                <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.id}}">
                                     {% for acl in existing_acls %}
                                         <option value="{{ acl.name }}">{{ acl.name }}</option>
                                     {% endfor %}
                                 </select>
                                 <button class="whcbutton btn btn-primary accept-button" role="button">Accept</button>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/skills/{{reject_timers.short_reject}}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
-                                <a href="/whctools/staff/action/{{char.eve_character.id}}/reject/other/{{reject_timers.medium_reject}}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
+                                <a href="/whctools/staff/action/{{char.application.eve_character.id}}/reject/skills/{{reject_timers.short_reject}}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
+                                <a href="/whctools/staff/action/{{char.application.eve_character.id}}/reject/other/{{reject_timers.medium_reject}}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -177,6 +199,20 @@ document.addEventListener('DOMContentLoaded', function() {
     acceptButtons.forEach(button => {
         button.addEventListener('click', handleAcceptClick);
     });
+});
+document.getElementById('openSkillcheckPopup').addEventListener('click', function() {
+    document.getElementById('skillcheckPopup').style.display = 'block';
+    document.getElementById('skillcheckPopupOverlay').style.display = 'block';
+});
+
+document.getElementById('closeSkillcheckPopup').addEventListener('click', function() {
+    document.getElementById('skillcheckPopup').style.display = 'none';
+    document.getElementById('skillcheckPopupOverlay').style.display = 'none';
+});
+
+document.getElementById('skillcheckPopupOverlay').addEventListener('click', function() {
+    document.getElementById('skillcheckPopup').style.display = 'none';
+    document.getElementById('skillcheckPopupOverlay').style.display = 'none';
 });
 </script>
 {% endblock %}

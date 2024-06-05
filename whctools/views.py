@@ -14,8 +14,8 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
 from allianceauth.framework.api.evecharacter import get_user_from_evecharacter, get_main_character_from_evecharacter
-from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user
-
+from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user, get_all_characters_from_user
+from memberaudit.models import Character, SkillSet
 
 
 from whctools import __title__
@@ -122,7 +122,31 @@ def staff(request):
         .order_by("last_updated")
     )
 
-    
+    applications_and_skillset_status = []
+    for application in chars_applied:
+
+        eve_char: EveCharacter = application.eve_character
+        user = get_user_from_evecharacter(eve_char)
+        all_characters = get_all_characters_from_user(user)
+
+        characters_skillset_status = {}
+        for char in all_characters:
+            ma_character:Character = char.memberaudit_character
+            ma_character.update_skill_sets()
+            skillset_names = set()
+            for acl in existing_acls:
+                characters_skillset_status.setdefault(char.character_name, {})
+                for skillset in acl.skill_sets.all():
+                    characters_skillset_status[char.character_name][skillset.name] = ma_character.skill_set_checks.filter(skill_set=skillset).first().can_fly 
+                    skillset_names.add(skillset.name)
+
+        applications_and_skillset_status.append(
+            {
+                "application": application,
+                "skill_sets": characters_skillset_status
+            }
+        )
+            
     chars_rejected = (
         Applications.objects.filter(member_state=Applications.MembershipStates.REJECTED)
         .select_related("eve_character__memberaudit_character")
@@ -137,11 +161,13 @@ def staff(request):
 
     # @@@ TODO: Add a view for auditing history of all application changes (paginated)
 
+    logger.debug(applications_and_skillset_status)
     context = {
         "accepted_chars": chars_accepted,
         "rejected_chars": chars_rejected,
-        "applied_chars": chars_applied,
+        "applied_chars": applications_and_skillset_status,
         "existing_acls": existing_acls,
+        "skillset_names": list(skillset_names),
         "reject_timers": {
             "large_reject": LARGE_REJECT,
             "medium_reject": MEDIUM_REJECT,
