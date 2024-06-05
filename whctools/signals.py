@@ -10,7 +10,7 @@ from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
 from allianceauth.notifications import notify
 from .models import Applications, Acl, ACLHistory
 from .app_settings import IVY_LEAGUE_ALT_ALLIANCE, IVY_LEAGUE_ALLIANCE, TRANSIENT_REJECT
-from .utils import remove_character_from_acl
+from .utils import remove_character_from_acl, log_application_change
 from django.utils import timezone
 import datetime
 
@@ -98,12 +98,15 @@ def remove_character_from_acls(character, acls_character_is_on, character_acl_ap
 
 def remove_in_process_application(user, application_details):
     """
-    For a character that has an un-accepted application still open, with draw it.
+    For a character that has an un-accepted application still open, withdraw it.
     """
     application_details.member_state == Applications.MembershipStates.REJECTED
     application_details.reject_reason = Applications.RejectionStates.LEFT_ALLIANCE
     application_details.save()
-                    # no time penalty here
+                    
+    log_application_change(
+        application=application_details,
+        old_state=Applications.MembershipStates.APPLIED)
                     
     notify.danger(
                         user,

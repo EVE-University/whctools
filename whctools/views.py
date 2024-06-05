@@ -164,7 +164,7 @@ def apply(request, char_id):
     eve_char_application.member_state = Applications.MembershipStates.APPLIED
     eve_char_application.save()
 
-    log_application_change(eve_char_application, new_state=Applications.MembershipStates.APPLIED)
+    log_application_change(eve_char_application)
 
     notify.info(
         request.user,
@@ -226,7 +226,7 @@ def withdraw(request, char_id, acl_name="WHC"):
         )
 
     eve_char_application.save()
-    log_application_change(eve_char_application, old_state=old_state, new_state=new_state, reason=reject_reason)
+    log_application_change(eve_char_application, old_state=old_state, reason=reject_reason)
 
     return redirect("/whctools")
 
@@ -251,7 +251,6 @@ def accept(request, char_id, acl_name=""):
         log_application_change(
             application=member_application,
             old_state=member_application.member_state,
-            new_state=Applications.MembershipStates.ACCEPTED,
         )
         add_character_to_acl(acl_name, member_application.eve_character, old_state, Applications.MembershipStates.ACCEPTED, ACLHistory.ApplicationStateChangeReason.ACCEPTED)
 
@@ -301,7 +300,6 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
         log_application_change(
             application=member_application,
             old_state=old_state,
-            new_state=member_application.member_state,
             reason=rejection_reason
         )
 
@@ -330,7 +328,6 @@ def reset(request, char_id, acl_name="WHC"):
         log_application_change(
             application=member_application,
             old_state=old_state,
-            new_state=Applications.MembershipStates.NOTAMEMBER,
             reason=Applications.RejectionStates.OTHER
         )
         
