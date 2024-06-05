@@ -29,6 +29,7 @@
                         <tr>
                             <th>Portrait</th>
                             <th>Character</th>
+                            <th>Main</th>
                             <th>App Age</th>
                             <th>MA link</th>
                             <th>Action</th>
@@ -39,6 +40,7 @@
                                 <img src="{{ char.eve_character.portrait_url }}">
                             </td>
                             <td>{{char.eve_character.character_name}}</td>
+                            <td><i>{{char.get_main_character.character_name}}</i></td>
                             <td>{{char.last_updated|timesince}}</td>
                             <td>
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
@@ -62,6 +64,7 @@
                         <tr>
                             <th>Portrait</th>
                             <th>Character</th>
+                            <th>Main</th>
                             <th>MA link</th>
                             <th>Action</th>
                         </tr>
@@ -71,6 +74,7 @@
                                 <img src="{{ char.eve_character.portrait_url }}">
                             </td>
                             <td>{{char.eve_character.character_name}}</td>
+                            <td><i>{{char.get_main_character.character_name}}</i></td>
                             <td>
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
                             </td>
@@ -86,6 +90,7 @@
                         <tr>
                             <th>Portrait</th>
                             <th>Character</th>
+                            <th>Main</th>
                             <th>MA link</th>
                             <th>When</th>
                             <th>Remaining</th>
@@ -98,6 +103,7 @@
                                 <img src="{{ char.eve_character.portrait_url }}">
                             </td>
                             <td>{{char.eve_character.character_name}}</td>
+                            <td><i>{{char.get_main_character.character_name}}</i></td>
                             <td>
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
                             </td>

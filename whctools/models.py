@@ -4,7 +4,7 @@ from django.db import models
 from django import forms
 
 from allianceauth.eveonline.models import EveCharacter
-
+from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
 
 
 
@@ -47,6 +47,7 @@ class Applications(models.Model):
     eve_character = models.OneToOneField(
         EveCharacter, on_delete=models.CASCADE, primary_key=True
     )
+    
     member_state = models.IntegerField(
         choices=MembershipStates.choices, default=MembershipStates.NOTAMEMBER
     )
@@ -64,6 +65,9 @@ class Applications(models.Model):
     class Meta:
         ordering = ["eve_character__character_name"]
         verbose_name_plural = "Applications"
+
+    def get_main_character(self):
+        return get_main_character_from_evecharacter(self.eve_character)
 
 
 class ApplicationHistory(models.Model):
@@ -97,6 +101,7 @@ class Acl(models.Model):
     name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
     characters = models.ManyToManyField(EveCharacter)
+
     
     def __str__(self):
         return self.name

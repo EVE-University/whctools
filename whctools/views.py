@@ -14,7 +14,8 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
 from allianceauth.framework.api.evecharacter import get_user_from_evecharacter, get_main_character_from_evecharacter
-from allianceauth.framework.api.user import get_all_characters_from_user
+from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user
+
 
 
 from whctools import __title__
@@ -41,12 +42,23 @@ def index(request):
     auth_characters = []
     unregistered_chars = []
     now = timezone.now()
+    main_character_name = get_main_character_name_from_user(request.user)
+    main_app_status = Applications.MembershipStates.NOTAMEMBER
+    for eve_char in owned_chars_query:
+        if eve_char.character_name == main_character_name:
+            try:
+                main_app_status = eve_char.applications.member_state
+                break
+            except:
+                pass
+    
     for eve_char in owned_chars_query:
         try:
             eve_char.applications
         except AttributeError:
             logger.debug(AttributeError)
             Applications.objects.update_or_create(eve_character=eve_char)
+
 
         try:
             macharacter: Character = eve_char.memberaudit_character
@@ -77,6 +89,8 @@ def index(request):
                     "portrait_url": eve_char.portrait_url(64),
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
+                    "is_main": main_character_name == eve_char.character_name,
+                    "is_main_member": main_app_status == Applications.MembershipStates.ACCEPTED
                 }
             )
 
@@ -107,6 +121,8 @@ def staff(request):
         .select_related("eve_character__memberaudit_character")
         .order_by("last_updated")
     )
+
+    
     chars_rejected = (
         Applications.objects.filter(member_state=Applications.MembershipStates.REJECTED)
         .select_related("eve_character__memberaudit_character")
