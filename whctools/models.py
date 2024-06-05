@@ -41,6 +41,7 @@ class Applications(models.Model):
         WITHDRAWN = 2, "Withdrawn Application"
         REMOVED = 3, "Removed From Community"
         LEFT_ALLIANCE = 4, "Left Alliance"
+        LEFT_COMMUNITY = 5, "Voluntarily Left"
         OTHER = 99, "Undisclosed"   
 
     eve_character = models.OneToOneField(
@@ -55,6 +56,7 @@ class Applications(models.Model):
     reject_timeout = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self) -> str:
         return self.eve_character.character_name
@@ -62,6 +64,29 @@ class Applications(models.Model):
     class Meta:
         ordering = ["eve_character__character_name"]
         verbose_name_plural = "Applications"
+
+
+class ApplicationHistory(models.Model):
+
+
+    date_of_change=models.DateTimeField(auto_now_add=True)
+    old_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+    )
+    new_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+    )
+    reject_reason = models.IntegerField(
+        choices=Applications.RejectionStates.choices, default=Applications.RejectionStates.NONE
+    )
+    application = models.ForeignKey(Applications, null=True, on_delete=models.SET_NULL, related_name="app_history")
+    
+    class Meta:
+        ordering = ["date_of_change"]
+        verbose_name_plural = "Application Log"
+
+    def __str__(self) -> str:
+        return f"{self.application.eve_character.character_name} - {self.get_old_state_display()} to {self.get_new_state_display()}"
 
 
 class Acl(models.Model):

@@ -4,7 +4,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
-from whctools.models import Acl, ACLHistory, Applications
+from whctools.models import Acl, ACLHistory, Applications, ApplicationHistory
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -47,3 +47,13 @@ def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
             )
         history_entry.save()
         acl_obj.changes.add(history_entry)
+
+
+def log_application_change(application, old_state=Applications.MembershipStates.NOTAMEMBER, new_state=Applications.MembershipStates.NOTAMEMBER, reason=Applications.RejectionStates.NONE):
+    log_user_application_change = ApplicationHistory(
+        application=application,
+        old_state=old_state ,
+        new_state=new_state,
+        reject_reason=reason
+    )
+    log_user_application_change.save()

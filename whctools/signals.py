@@ -24,13 +24,18 @@ def leaves_uni(sender, instance, raw, using, update_fields, **kwargs):
     try:
         if instance.pk:
             character = EveCharacter.objects.get(pk=instance.pk)
-
+            if character is None:
+                
+                logger.debug(f"WHCTools Signal Post Save - Character is None")
+                return
+            logger.debug(f"WHCTools Signal Character: {character.character_name}")
             if character.alliance_id not in [IVY_LEAGUE_ALLIANCE, IVY_LEAGUE_ALT_ALLIANCE]:
 
                 acls_character_is_on = Acl.objects.filter(characters=character)
 
                 if not acls_character_is_on or len(acls_character_is_on) == 0:
                     #if the character is on no acls, then skip
+                    logger.debug(f"WHCTools Signal Character: No Acls")
                     return 
                 
                 character_acl_application = (
@@ -42,8 +47,8 @@ def leaves_uni(sender, instance, raw, using, update_fields, **kwargs):
                 )
 
                 if not character_acl_application:
+                    logger.debug(f"WHCTools Signal Character: {character.character_name} is on acls {acls_character_is_on} but has no applications")
                     #if somehow the character, despite being on acls, has an open application...
-
                     # do something here!!!
                     # discord notify probably
                     return

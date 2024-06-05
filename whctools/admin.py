@@ -5,4 +5,6 @@ from django.contrib import admin
 from . import models
 
 admin.site.register(models.Applications)
+admin.site.register(models.ApplicationHistory)
 admin.site.register(models.Acl)
+

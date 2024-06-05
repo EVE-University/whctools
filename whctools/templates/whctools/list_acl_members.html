@@ -35,11 +35,27 @@
                         </tr>
                         {% for member in members %}
                         <tr>
-                            <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
-                            <td> {{member.name}} </td>
-                            <td> {{member.corp}}</td>
-                            <td> {{member.alliance}}</td>
+                            <td> <img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"> </td>
+                            <td> {{member.main.name}} </td>
+                            <td> {{member.main.corp}}</td>
+                            <td> {{member.main.alliance}}</td>
                         </tr>
+                            {% for alt in member.alts %}
+                            <tr>
+                                <td> 🠊🠊🠊 <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
+                                <td> {{alt.name}} [ALT of {{member.main.name}} - ON this ACL]</td>
+                                <td> {{alt.corp}}</td>
+                                <td> {{alt.alliance}}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for alt in member.complete_alts %}
+                            <tr>
+                                <td> 🞮🞮🞮 <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
+                                <td> {{alt.name}} [ALT of {{member.main.name}} <span class="acl-change-remove">NOT ON this ACL</span>]</td>
+                                <td> {{alt.corp}}</td>
+                                <td> {{alt.alliance}}</td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
                     </table>
                 </div>
