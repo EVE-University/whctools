@@ -220,7 +220,7 @@ def apply(request, char_id):
 
     notify.info(
         request.user,
-        "WHC application",
+        "WHC application: Application Submitted", #@@@ todo, individual application to different communities
         f"You have applied to the WHC Community on {owned_chars_query[0].character_name}.",
     )
 
@@ -247,34 +247,26 @@ def withdraw(request, char_id, acl_name="WHC"):
 
     if eve_char_application.member_state == Applications.MembershipStates.ACCEPTED:
         # Dont apply penalty to leaving members
-        old_state = Applications.MembershipStates.ACCEPTED
-        new_state = Applications.MembershipStates.NOTAMEMBER
-        reject_reason = Applications.RejectionStates.LEFT_COMMUNITY
-        eve_char_application.member_state = Applications.MembershipStates.NOTAMEMBER
-
-
         logger.debug(f"Removing {eve_char_application.eve_character.character_name} from {acl_name}")
-        remove_character_from_acl(eve_char_application.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_application.member_state, ACLHistory.ApplicationStateChangeReason.LEFT_GROUP )
+        old_state = eve_char_application.member_state
+        reject_reason = Applications.RejectionStates.LEFT_COMMUNITY
+        remove_character_from_community(eve_char_application,  Applications.MembershipStates.REJECTED, reject_reason, reject_time=0)
+        remove_character_from_acl(eve_char_application.eve_character.character_id, acl_name, old_state, eve_char_application.member_state, ACLHistory.ApplicationStateChangeReason.LEFT_GROUP )
         notify.info(
             request.user,
-            "WHC application",
-            f"You have left the WHC Community on {eve_char_application.eve_character.character_name}.",
+            f"{acl_name} Community: Left Community",
+            f"You have left the {acl_name} Community on {eve_char_application.eve_character.character_name}.",
         )
 
     else:
         old_state = eve_char_application.member_state
-        new_state = Applications.MembershipStates.REJECTED
         reject_reason = Applications.RejectionStates.WITHDRAWN
-        eve_char_application.member_state = new_state
-        eve_char_application.reject_reason =reject_reason
-        eve_char_application.reject_timeout = timezone.now() + datetime.timedelta(
-            minutes=TRANSIENT_REJECT
-        )
+        remove_character_from_community(eve_char_application,  Applications.MembershipStates.REJECTED, reject_reason, reject_time=TRANSIENT_REJECT)
         
         notify.warning(
             request.user,
-            "WHC application",
-            f"You have withdrawn from the WHC Community on {eve_char_application.eve_character.character_name}. You will now be subject to a short timer before you can reapply.",
+            f"{acl_name} application: Withdraw",
+            f"You have withdrawn your open application for the {acl_name} Community on {eve_char_application.eve_character.character_name}. You will now be subject to a short timer before you can reapply.",
         )
 
     eve_char_application.save()
@@ -285,7 +277,7 @@ def withdraw(request, char_id, acl_name="WHC"):
 
 @login_required
 @permission_required("whctools.whc_officer")
-def accept(request, char_id, acl_name=""):
+def accept(request, char_id, acl_name="WHC"):
 
     whcapplication = Applications.objects.filter(
         eve_character_id=char_id
@@ -308,8 +300,8 @@ def accept(request, char_id, acl_name=""):
 
         notify.success(
             main_user,
-            "WHC application",
-            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been approved.",
+            f"{acl_name} application: Approved",
+            f"Your application to the {acl_name} Community on {member_application.eve_character.character_name} has been approved.",
         )
 
     return redirect("/whctools/staff")
@@ -327,20 +319,25 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
     if whcapplication:  # @@@ move this into template
         member_application = whcapplication[0]
         old_state = member_application.member_state
+        notify_subject = "Application Denied"
 
-        if reason == "skills":
-            # WHC CL Morra states that only one character on an account has to meet the skill requirements - therefor, if none meet them reject all
-            rejection_reason = Applications.RejectionStates.SKILLS
-            notification_names = remove_all_alts(acl_name, member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
-        
-        elif reason == "removed":
+        # Removed should only be triggered by the removal by staff directly after a membership is allready accepted
+        if reason == "removed":
             # If a WHC character is forcefully removed, remove all alts as well.
             logger.debug(f"Removing {member_application.eve_character.character_name} and all their alts from {acl_name}")
             rejection_reason = Applications.RejectionStates.REMOVED
+            notify_subject = "Membership Revoked"
             notification_names = remove_all_alts(acl_name, member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
 
+
+        elif reason == "skills":
+            # WHC CL Morra states that only one character on an account has to meet the skill requirements - therefor, if none meet them reject all
+            rejection_reason = Applications.RejectionStates.SKILLS
+            notification_names = remove_all_alts(acl_name, member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
+    
         else:
             # Other can be used for individual removal of alts that need cleaning up.
+            # note: currently only used on the reject an openapplication - additional @@@ TODO to hook up to the remove membership page
             logger.debug(f"Singleton removal of {member_application.eve_character.character_name}")
             rejection_reason = Applications.RejectionStates.OTHER
             notification_names = member_application.eve_character.character_name
@@ -355,8 +352,8 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
 
         notify.danger(
             member_application.eve_character.character_ownership.user,
-            "WHC application",
-            f"Your application to the WHC Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}" +\
+            f"{acl_name} Community: {notify_subject}",
+            f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}" +\
                 "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
         )
 
@@ -392,8 +389,8 @@ def reset(request, char_id, acl_name="WHC"):
 
         notify.success(
             member_application.eve_character.character_ownership.user,
-            "WHC application",
-            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
+            f"{acl_name} application availability reset",
+            f"Your application to the {acl_name} Community on {member_application.eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
         )
 
     return redirect("/whctools/staff")
@@ -458,12 +455,14 @@ def list_acl_members(request, acl_pk=""):
             "corp": character["main"].corporation_name,
             "alliance": character["main"].alliance_name,
             "portrait_url": character["main"].portrait_url(32),
+            "character_id": str(character["main"].character_id)
         }
         character["alts"]  = list(sorted([{
             "name": m.character_name,
             "corp": m.corporation_name,
             "alliance": m.alliance_name,
             "portrait_url": m.portrait_url(32),
+            "character_id": str(m.character_id)
         } for m in character["alts"] if m.character_name != character["main"]["name"]], key=lambda x: x["name"]))
 
         acl_alt_names = [alt["name"]  for alt in character["alts"]]
@@ -473,6 +472,7 @@ def list_acl_members(request, acl_pk=""):
             "corp": m.corporation_name,
             "alliance": m.alliance_name,
             "portrait_url": m.portrait_url(32),
+
         } for m in character["complete_alts"] if m.character_name not in acl_alt_names and m.character_name != character["main"]["name"]], key=lambda x: x["name"]))
         
 
@@ -482,7 +482,13 @@ def list_acl_members(request, acl_pk=""):
         "acl_name": acl_pk,
         "date_selected": date_selected,
         "acl_changes": parsed_acl_history,
-        "acl_history_request": AclHistoryRequest()
+        "acl_history_request": AclHistoryRequest(),
+        "reject_timers": {
+            "large_reject": LARGE_REJECT,
+            "medium_reject": MEDIUM_REJECT,
+            "short_reject": SHORT_REJECT,
+            "transient_reject": TRANSIENT_REJECT,
+        },
         }
 
     return render(request, "whctools/list_acl_members.html", context)
