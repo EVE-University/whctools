@@ -1,4 +1,7 @@
+<!-- bs5.html is only good for 4.0+ -->
+<!-- Will need a lot of additional work to translate this to bs5 for 4.0, missing some things-->
 {% extends 'allianceauth/base.html' %}
+{#% extends 'allianceauth/base-bs5.html' %#}
 {% load i18n %}
 
 {% block page_title %}{% translate "WHC Applications" %}{% endblock %}
@@ -66,5 +69,63 @@
     img.whctools-image-disabled-class {
         filter: grayscale(100%);
     }
+
+
+    .whctools-acl-change {
+        border-radius: 50px; 
+        padding: 10px 20px;
+        border: none; 
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: white;
+        width: 100px;
+    }
+    .whctools-red-bg {
+        background-color: red;
+
+    }
+    .whctools-green-bg{
+        background-color: green;
+    }
+
+    .whctools-alt-tag {
+        color: white;
+        border-radius: 5px;
+        padding: 5px 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: white;
+        width: 75px;
+        white-space: nowrap; 
+        font-size: 0.6em;
+    }
+
+    .whctools-skillcheck-popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        background-color: rgb(39,43,48);
+        border-radius: 20px: 
+    }
+    .whctools-skillcheck-popup-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
 </style>
 {% endblock %}

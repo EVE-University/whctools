@@ -4,8 +4,8 @@ from django.db import models
 from django import forms
 
 from allianceauth.eveonline.models import EveCharacter
-
-
+from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
+from memberaudit.models import SkillSet
 
 
 
@@ -40,11 +40,14 @@ class Applications(models.Model):
         SKILLS = 1, "Insufficient Skills"
         WITHDRAWN = 2, "Withdrawn Application"
         REMOVED = 3, "Removed From Community"
+        LEFT_ALLIANCE = 4, "Left Alliance"
+        LEFT_COMMUNITY = 5, "Voluntarily Left"
         OTHER = 99, "Undisclosed"   
 
     eve_character = models.OneToOneField(
         EveCharacter, on_delete=models.CASCADE, primary_key=True
     )
+    
     member_state = models.IntegerField(
         choices=MembershipStates.choices, default=MembershipStates.NOTAMEMBER
     )
@@ -54,6 +57,7 @@ class Applications(models.Model):
     reject_timeout = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self) -> str:
         return self.eve_character.character_name
@@ -61,6 +65,32 @@ class Applications(models.Model):
     class Meta:
         ordering = ["eve_character__character_name"]
         verbose_name_plural = "Applications"
+
+    def get_main_character(self):
+        return get_main_character_from_evecharacter(self.eve_character)
+
+
+class ApplicationHistory(models.Model):
+
+
+    date_of_change=models.DateTimeField(auto_now_add=True)
+    old_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+    )
+    new_state = models.IntegerField(
+        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+    )
+    reject_reason = models.IntegerField(
+        choices=Applications.RejectionStates.choices, default=Applications.RejectionStates.NONE
+    )
+    application = models.ForeignKey(Applications, null=True, on_delete=models.SET_NULL, related_name="app_history")
+    
+    class Meta:
+        ordering = ["date_of_change"]
+        verbose_name_plural = "Application Log"
+
+    def __str__(self) -> str:
+        return f"{self.application.eve_character.character_name} - {self.get_old_state_display()} to {self.get_new_state_display()}"
 
 
 class Acl(models.Model):
@@ -71,6 +101,7 @@ class Acl(models.Model):
     name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
     characters = models.ManyToManyField(EveCharacter)
+    skill_sets = models.ManyToManyField(SkillSet)
     
     def __str__(self):
         return self.name
@@ -97,7 +128,7 @@ class ACLHistory(models.Model):
     )
     reason_for_change = models.IntegerField(
         choices=ApplicationStateChangeReason.choices, default = ApplicationStateChangeReason.NONE
-    ),
+    )
     changed_by = models.CharField(max_length=225, null=False, blank=True)
     acl = models.ForeignKey(Acl, on_delete=models.CASCADE, related_name='changes')
     character = models.ForeignKey(EveCharacter, null=True, on_delete=models.SET_NULL)

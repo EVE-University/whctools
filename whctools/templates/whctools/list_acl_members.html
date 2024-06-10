@@ -30,16 +30,36 @@
                         <tr>
                             <th>Portrait</th>
                             <th>Character</th>
+                            <th>Alt</th>
                             <th>Corp</th>
                             <th>Alliance</th>
                         </tr>
                         {% for member in members %}
                         <tr>
-                            <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
-                            <td> {{member.name}} </td>
-                            <td> {{member.corp}}</td>
-                            <td> {{member.alliance}}</td>
+                            <td> <img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"> </td>
+                            <td> {{member.main.name}} </td>
+                            <td> <i>Main</i></td>
+                            <td> {{member.main.corp}}</td>
+                            <td> {{member.main.alliance}}</td>
                         </tr>
+                            {% for alt in member.alts %}
+                            <tr>
+                                <td>  ⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
+                                <td><div class="whctools-alt-tag whctools-green-bg">Member</div> </td>
+                                <td> {{alt.name}} </td>
+                                <td> {{alt.corp}}</td>
+                                <td> {{alt.alliance}}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for alt in member.complete_alts %}
+                            <tr>
+                                <td>  ⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
+                                <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div> </td>
+                                <td> {{alt.name}}</td>
+                                <td> {{alt.corp}}</td>
+                                <td> {{alt.alliance}}</td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
                     </table>
                 </div>
@@ -64,6 +84,7 @@
                             <th>Portrait</th>
                             <th>Name</th>
                             <th>Last State</th>
+                            <th>Reason for Change</th>
                             <th>Action To Take</th>
 
                         </tr>
@@ -73,7 +94,8 @@
                             <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
                             <td> {{member.name}} </td>
                             <td> {{member.state}} </td>
-                            <td><class="whcbutton btn {% if member.action == 'remove' %} btn-good {% else %} btn-success {% endif %}" > {{member.action}} </div></td>
+                            <td> {{member.reason}} </td>
+                            <td><div class="whctools-acl-change {% if member.action == 'Remove' %} whctools-red-bg {% else %} whctools-green-bg{% endif %}" > {{member.action}} </div></td>
                         </tr>
                         {% endfor %}
                     </table>

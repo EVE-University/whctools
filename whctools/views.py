@@ -12,10 +12,14 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
-from .utils import remove_character_from_acl, add_character_to_acl
+from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
+from allianceauth.framework.api.evecharacter import get_user_from_evecharacter, get_main_character_from_evecharacter
+from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user, get_all_characters_from_user
+from memberaudit.models import Character, SkillSet
+
 
 from whctools import __title__
-from whctools.models import Acl, Applications, ACLHistory, AclHistoryRequest
+from whctools.models import Acl, Applications, ApplicationHistory, ACLHistory, AclHistoryRequest
 from whctools.app_settings import (
     LARGE_REJECT,
     MEDIUM_REJECT,
@@ -38,12 +42,23 @@ def index(request):
     auth_characters = []
     unregistered_chars = []
     now = timezone.now()
+    main_character_name = get_main_character_name_from_user(request.user)
+    main_app_status = Applications.MembershipStates.NOTAMEMBER
+    for eve_char in owned_chars_query:
+        if eve_char.character_name == main_character_name:
+            try:
+                main_app_status = eve_char.applications.member_state
+                break
+            except:
+                pass
+    
     for eve_char in owned_chars_query:
         try:
             eve_char.applications
         except AttributeError:
             logger.debug(AttributeError)
             Applications.objects.update_or_create(eve_character=eve_char)
+
 
         try:
             macharacter: Character = eve_char.memberaudit_character
@@ -74,6 +89,8 @@ def index(request):
                     "portrait_url": eve_char.portrait_url(64),
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
+                    "is_main": main_character_name == eve_char.character_name,
+                    "is_main_member": main_app_status == Applications.MembershipStates.ACCEPTED
                 }
             )
 
@@ -104,6 +121,32 @@ def staff(request):
         .select_related("eve_character__memberaudit_character")
         .order_by("last_updated")
     )
+
+    applications_and_skillset_status = []
+    for application in chars_applied:
+
+        eve_char: EveCharacter = application.eve_character
+        user = get_user_from_evecharacter(eve_char)
+        all_characters = get_all_characters_from_user(user)
+
+        characters_skillset_status = {}
+        for char in all_characters:
+            ma_character:Character = char.memberaudit_character
+            ma_character.update_skill_sets()
+            skillset_names = set()
+            for acl in existing_acls:
+                characters_skillset_status.setdefault(char.character_name, {})
+                for skillset in acl.skill_sets.all():
+                    characters_skillset_status[char.character_name][skillset.name] = ma_character.skill_set_checks.filter(skill_set=skillset).first().can_fly 
+                    skillset_names.add(skillset.name)
+
+        applications_and_skillset_status.append(
+            {
+                "application": application,
+                "skill_sets": characters_skillset_status
+            }
+        )
+            
     chars_rejected = (
         Applications.objects.filter(member_state=Applications.MembershipStates.REJECTED)
         .select_related("eve_character__memberaudit_character")
@@ -116,11 +159,15 @@ def staff(request):
         .order_by("eve_character__character_name")
     )
 
+    # @@@ TODO: Add a view for auditing history of all application changes (paginated)
+
+    logger.debug(applications_and_skillset_status)
     context = {
         "accepted_chars": chars_accepted,
         "rejected_chars": chars_rejected,
-        "applied_chars": chars_applied,
+        "applied_chars": applications_and_skillset_status,
         "existing_acls": existing_acls,
+        "skillset_names": list(skillset_names),
         "reject_timers": {
             "large_reject": LARGE_REJECT,
             "medium_reject": MEDIUM_REJECT,
@@ -146,18 +193,20 @@ def apply(request, char_id):
         logger.debug("No Match!")
         return redirect("/whctools")
 
-    eve_char_applications = owned_chars_query[0].applications
+    eve_char_application = owned_chars_query[0].applications
 
     # Check if not already a member
-    if eve_char_applications.member_state == Applications.MembershipStates.ACCEPTED:
+    if eve_char_application.member_state == Applications.MembershipStates.ACCEPTED:
         return redirect("/whctools")
 
     # Check if rejected
-    if eve_char_applications.member_state == Applications.MembershipStates.REJECTED:
+    if eve_char_application.member_state == Applications.MembershipStates.REJECTED:
         return redirect("/whctools")
 
-    eve_char_applications.member_state = Applications.MembershipStates.APPLIED
-    eve_char_applications.save()
+    eve_char_application.member_state = Applications.MembershipStates.APPLIED
+    eve_char_application.save()
+
+    log_application_change(eve_char_application)
 
     notify.info(
         request.user,
@@ -184,32 +233,42 @@ def withdraw(request, char_id, acl_name="WHC"):
         logger.debug("No Match!")
         return redirect("/whctools")
 
-    eve_char_applications = owned_chars_query[0].applications
+    eve_char_application = owned_chars_query[0].applications
 
-    if eve_char_applications.member_state == Applications.MembershipStates.ACCEPTED:
+    if eve_char_application.member_state == Applications.MembershipStates.ACCEPTED:
         # Dont apply penalty to leaving members
-        eve_char_applications.member_state = Applications.MembershipStates.NOTAMEMBER
-        logger.debug(f"Removing {eve_char_applications.eve_character.character_name} from {acl_name}")
-        remove_character_from_acl(eve_char_applications.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_applications.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+        old_state = Applications.MembershipStates.ACCEPTED
+        new_state = Applications.MembershipStates.NOTAMEMBER
+        reject_reason = Applications.RejectionStates.LEFT_COMMUNITY
+        eve_char_application.member_state = Applications.MembershipStates.NOTAMEMBER
+
+
+        logger.debug(f"Removing {eve_char_application.eve_character.character_name} from {acl_name}")
+        remove_character_from_acl(eve_char_application.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
         notify.info(
             request.user,
             "WHC application",
-            f"You have left the WHC Community on {eve_char_applications.eve_character.character_name}.",
+            f"You have left the WHC Community on {eve_char_application.eve_character.character_name}.",
         )
 
     else:
-        eve_char_applications.member_state = Applications.MembershipStates.REJECTED
-        eve_char_applications.reject_reason = Applications.RejectionStates.WITHDRAWN
-        eve_char_applications.reject_timeout = timezone.now() + datetime.timedelta(
+        old_state = eve_char_application.member_state
+        new_state = Applications.MembershipStates.REJECTED
+        reject_reason = Applications.RejectionStates.WITHDRAWN
+        eve_char_application.member_state = new_state
+        eve_char_application.reject_reason =reject_reason
+        eve_char_application.reject_timeout = timezone.now() + datetime.timedelta(
             minutes=TRANSIENT_REJECT
         )
+        
         notify.warning(
             request.user,
             "WHC application",
-            f"You have withdrawn from the WHC Community on {eve_char_applications.eve_character.character_name}. You will now be subject to a short timer before you can reapply.",
+            f"You have withdrawn from the WHC Community on {eve_char_application.eve_character.character_name}. You will now be subject to a short timer before you can reapply.",
         )
 
-    eve_char_applications.save()
+    eve_char_application.save()
+    log_application_change(eve_char_application, old_state=old_state, reason=reject_reason)
 
     return redirect("/whctools")
 
@@ -229,6 +288,12 @@ def accept(request, char_id, acl_name=""):
         member_application.member_state = Applications.MembershipStates.ACCEPTED
         member_application.save()
         main_user = member_application.eve_character.character_ownership.user
+
+
+        log_application_change(
+            application=member_application,
+            old_state=member_application.member_state,
+        )
         add_character_to_acl(acl_name, member_application.eve_character, old_state, Applications.MembershipStates.ACCEPTED, ACLHistory.ApplicationStateChangeReason.ACCEPTED)
 
         notify.success(
@@ -250,30 +315,40 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
 
     if whcapplication:  # @@@ move this into template
-        old_state = whcapplication[0].member_state
-        whcapplication[0].member_state = Applications.MembershipStates.REJECTED
+        member_application = whcapplication[0]
+        old_state = member_application.member_state
+        member_application.member_state = Applications.MembershipStates.REJECTED
         if reason == "skills":
-            whcapplication[0].reject_reason = Applications.RejectionStates.SKILLS
+            rejection_reason = Applications.RejectionStates.SKILLS
         elif reason == "removed":
-            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
-            whcapplication[0].reject_reason = Applications.RejectionStates.REMOVED
+            logger.debug(f"Removing {member_application.eve_character.character_name} from {acl_name}")
+            rejection_reason = Applications.RejectionStates.REMOVED
 
-            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
 
 
         else:
-            whcapplication[0].reject_reason = Applications.RejectionStates.OTHER
-            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
-            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
-        whcapplication[0].reject_timeout = timezone.now() + datetime.timedelta(
+            rejection_reason = Applications.RejectionStates.OTHER
+            logger.debug(f"Removing {member_application.eve_character.character_name} from {acl_name}")
+            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+        member_application.reject_timeout = timezone.now() + datetime.timedelta(
             days=int(days)
         )
-        whcapplication[0].save()
-        main_user = whcapplication[0].eve_character.character_ownership.user
+
+
+        member_application.reject_reason = rejection_reason
+        member_application.save()
+
+        log_application_change(
+            application=member_application,
+            old_state=old_state,
+            reason=rejection_reason
+        )
+
         notify.danger(
-            main_user,
+            member_application.eve_character.character_ownership.user,
             "WHC application",
-            f"Your application to the WHC Community on {whcapplication[0].eve_character.character_name} has been rejected.\nReason: {whcapplication[0].get_reject_reason_display()}",
+            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been rejected.\nReason: {member_application.get_reject_reason_display()}",
         )
 
     return redirect("/whctools/staff")
@@ -288,19 +363,24 @@ def reset(request, char_id, acl_name="WHC"):
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
 
     if whcapplication:
-        old_state = whcapplication[0].member_state
-        whcapplication[0].member_state = Applications.MembershipStates.NOTAMEMBER
-        whcapplication[0].save()
-        main_user = whcapplication[0].eve_character.character_ownership.user
+        member_application = whcapplication[0]
+        old_state = member_application.member_state
+        member_application.member_state = Applications.MembershipStates.NOTAMEMBER
+        member_application.save()
+        log_application_change(
+            application=member_application,
+            old_state=old_state,
+            reason=Applications.RejectionStates.OTHER
+        )
         
         if old_state == Applications.MembershipStates.ACCEPTED:
-            logger.debug(f"Removing {whcapplication[0].eve_character.character_name} from {acl_name}")
-            remove_character_from_acl(whcapplication[0].eve_character.character_id, acl_name, old_state, whcapplication[0].member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+            logger.debug(f"Removing {member_application.eve_character.character_name} from {acl_name}")
+            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
 
         notify.success(
-            main_user,
+            member_application.eve_character.character_ownership.user,
             "WHC application",
-            f"Your application to the WHC Community on {whcapplication[0].eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
+            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
         )
 
     return redirect("/whctools/staff")
@@ -340,19 +420,52 @@ def list_acl_members(request, acl_pk=""):
                         "portrait_url": entry.character.portrait_url(32),
                         "name": entry.character.character_name,
                         "state":new_state.name,
-                        "action": action
+                        "action": action,
+                        "reason": entry.get_reason_for_change_display()
                     }
             
             parsed_acl_history = list(parsed_acl_history.values())
 
+    mains_and_alts = {}
+    for memb in members_on_acl:
+        user_obj = get_user_from_evecharacter(memb)
+        
+        mains_and_alts.setdefault(user_obj.id, {})
+        if "main" not in mains_and_alts[user_obj.id].keys():
+            mains_and_alts[user_obj.id]["main"] = get_main_character_from_evecharacter(memb)
+        
+        mains_and_alts[user_obj.id].setdefault("alts", []).append(memb)
+        mains_and_alts[user_obj.id].setdefault("complete_alts", get_all_characters_from_user(user_obj))
 
-    context = {
-        "members": sorted([{
+    alphabetical_mains = dict(sorted(mains_and_alts.items(), key=lambda x: x[1]["main"].character_name))
+
+    for character in alphabetical_mains.values():
+        character["main"] = {
+            "name": character["main"].character_name,
+            "corp": character["main"].corporation_name,
+            "alliance": character["main"].alliance_name,
+            "portrait_url": character["main"].portrait_url(32),
+        }
+        character["alts"]  = list(sorted([{
             "name": m.character_name,
             "corp": m.corporation_name,
             "alliance": m.alliance_name,
             "portrait_url": m.portrait_url(32),
-        } for m in members_on_acl], key=lambda x: x["name"]), 
+        } for m in character["alts"] if m.character_name != character["main"]["name"]], key=lambda x: x["name"]))
+
+        acl_alt_names = [alt["name"]  for alt in character["alts"]]
+
+        character["complete_alts"]  = list(sorted([{
+            "name": m.character_name,
+            "corp": m.corporation_name,
+            "alliance": m.alliance_name,
+            "portrait_url": m.portrait_url(32),
+        } for m in character["complete_alts"] if m.character_name not in acl_alt_names and m.character_name != character["main"]["name"]], key=lambda x: x["name"]))
+        
+
+    logger.info(alphabetical_mains)
+    context = {
+        "members": alphabetical_mains.values(), 
         "acl_name": acl_pk,
         "date_selected": date_selected,
         "acl_changes": parsed_acl_history,
