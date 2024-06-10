@@ -254,7 +254,7 @@ def withdraw(request, char_id, acl_name="WHC"):
 
 
         logger.debug(f"Removing {eve_char_application.eve_character.character_name} from {acl_name}")
-        remove_character_from_acl(eve_char_application.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
+        remove_character_from_acl(eve_char_application.eve_character.character_id, acl_name, Applications.MembershipStates.ACCEPTED, eve_char_application.member_state, ACLHistory.ApplicationStateChangeReason.LEFT_GROUP )
         notify.info(
             request.user,
             "WHC application",
