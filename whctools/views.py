@@ -132,6 +132,7 @@ def staff(request):
     )
 
     applications_and_skillset_status = []
+    skillset_names = set()
     for application in chars_applied:
 
         eve_char: EveCharacter = application.eve_character
@@ -139,10 +140,10 @@ def staff(request):
         all_characters = get_all_characters_from_user(user)
 
         characters_skillset_status = {}
+        
         for char in all_characters:
             ma_character:Character = char.memberaudit_character
             ma_character.update_skill_sets()
-            skillset_names = set()
             for acl in existing_acls:
                 characters_skillset_status.setdefault(char.character_name, {})
                 for skillset in acl.skill_sets.all():
