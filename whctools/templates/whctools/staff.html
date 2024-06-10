@@ -43,10 +43,11 @@
                             <td><i>{{char.application.get_main_character.character_name}}</i></td>
                             <td>{{char.application.last_updated|timesince}}</td>
                             <td>
-                                <button class="whcbutton btn btn-primary" id="openSkillcheckPopup">Check Skills</button>
+                                <button class="whcbutton btn btn-primary openSkillcheckPopup" data-id="{{ forloop.counter }}">Check Skills</button>
 
-                                <div class="whctools-skillcheck-popup-overlay" id="skillcheckPopupOverlay"></div>
-                                <div class="whctools-skillcheck-popup" id="skillcheckPopup">
+                                <div class="whctools-skillcheck-popup-overlay skillcheckPopupOverlay" id="skillcheckPopupOverlay{{ forloop.counter }}"></div>
+                                <div class="whctools-skillcheck-popup skillcheckPopup" id="skillcheckPopup{{ forloop.counter }}">
+                                    
                                     <h3>Skill Set Checks for <u>{{char.application.eve_character.character_name}}</u> related characters</h3>
                                     <table class="table">
                                         <tr class="whctools-tr">
@@ -57,14 +58,19 @@
                                         </tr>
                                         {% for alt_name, skill_sets in char.skill_sets.items %}
                                         <tr>
-                                            <td>{{ alt_name }}</td>
+                                            <td>{{ alt_name }} 
+                                                {% if alt_name == char.application.get_main_character.character_name %}
+                                                <i class="fas fa-crown"></i>
+                                                {% endif %}
+                                            </td>
                                             {% for skill_check in skill_sets.values %}
                                             <td style="text-align: center;"><i {% if skill_check %}class="fas fa-check" style="color: green;" {% else %}class="fas fa-times" style="color: red;" {% endif %} ></i></td>
                                             {% endfor %}
                                         </tr>
                                         {% endfor%}
                                     </table>
-                                    <button class="whcbutton btn btn-danger" id="closeSkillcheckPopup">Close</button>
+                                    <button class="whcbutton btn btn-danger closeSkillcheckPopup" data-id="{{ forloop.counter }}">Close</button>
+        
                                 </div>
                             </td>
                             <td>
@@ -95,8 +101,12 @@
                             <td>
                                 <img src="{{ char.eve_character.portrait_url }}">
                             </td>
-                            <td>{{char.eve_character.character_name}}</td>
-                            <td><i>{{char.get_main_character.character_name}}</i></td>
+                            <td>
+                                {{char.eve_character.character_name}} 
+                            </td>
+                            <td><i>
+                                {{char.get_main_character.character_name}}
+                            </td>
                             <td>
                                 <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
                             </td>
@@ -200,19 +210,30 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', handleAcceptClick);
     });
 });
-document.getElementById('openSkillcheckPopup').addEventListener('click', function() {
-    document.getElementById('skillcheckPopup').style.display = 'block';
-    document.getElementById('skillcheckPopupOverlay').style.display = 'block';
-});
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.openSkillcheckPopup').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            document.getElementById(`skillcheckPopup${id}`).style.display = 'block';
+            document.getElementById(`skillcheckPopupOverlay${id}`).style.display = 'block';
+        });
+    });
 
-document.getElementById('closeSkillcheckPopup').addEventListener('click', function() {
-    document.getElementById('skillcheckPopup').style.display = 'none';
-    document.getElementById('skillcheckPopupOverlay').style.display = 'none';
-});
+    document.querySelectorAll('.closeSkillcheckPopup').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            document.getElementById(`skillcheckPopup${id}`).style.display = 'none';
+            document.getElementById(`skillcheckPopupOverlay${id}`).style.display = 'none';
+        });
+    });
 
-document.getElementById('skillcheckPopupOverlay').addEventListener('click', function() {
-    document.getElementById('skillcheckPopup').style.display = 'none';
-    document.getElementById('skillcheckPopupOverlay').style.display = 'none';
+    document.querySelectorAll('.skillcheckPopupOverlay').forEach(overlay => {
+        overlay.addEventListener('click', function() {
+            const id = this.id.replace('skillcheckPopupOverlay', '');
+            document.getElementById(`skillcheckPopup${id}`).style.display = 'none';
+            document.getElementById(`skillcheckPopupOverlay${id}`).style.display = 'none';
+        });
+    });
 });
 </script>
 {% endblock %}

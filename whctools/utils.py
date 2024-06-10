@@ -17,6 +17,37 @@ from allianceauth.authentication.models import CharacterOwnership
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
+
+def remove_character_from_community(app, acl_name, new_state, reason, reject_time):
+    """
+    remove a singular character from the acl and set its application to the new state, give a reason for the removal, and set a rejection time
+    """
+    old_state = app.member_state
+    app.member_state = new_state
+    app.reject_reason = reason
+    app.reject_timeout = timezone.now() + datetime.timedelta(
+                days=int(reject_time)
+            )
+    app.save()
+    remove_character_from_acl(app.eve_character.character_id, acl_name, old_state, app.member_state, reason)
+
+def remove_all_alts(acl_name, member_application, new_state, reason, reject_time):
+    """
+    Remove all alts from the acl and set their applications to the new state
+    """
+    all_characters = get_all_related_characters_from_character(member_application.eve_character)
+    for char in all_characters:
+        logger.debug(f"[Remove All Alts]- checking alt {char.character_name} for application")
+        app = Applications.objects.filter(eve_character=char)[0]
+        if app:
+            logger.debug(f"Removing alt named {app.eve_character.character_name} belonging to {member_application.eve_character.character_name}")
+            remove_character_from_community(app, acl_name, new_state, reason, reject_time)
+    
+
+                 
+    notification_names = ", ".join([char.character_name for char in all_characters])
+    return notification_names
+
 def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
     """Helper function to remove a character from an acl"""
 
@@ -41,7 +72,7 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
                 acl_object[0].changes.add(history_entry)
 
 def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
-    logger.debug(f"Adding {eve_character.character_name} to {acl_name} - setting to {Applications.MembershipStates(new_state).name} for {reason.name}")
+    logger.debug(f"Adding {eve_character.character_name} to {acl_name} - setting to {Applications.MembershipStates(new_state).name} for reason of {reason.name}")
     acl_obj = Acl.objects.get(pk=acl_name)
     if acl_obj:
         acl_obj.characters.add(eve_character)
@@ -115,6 +146,10 @@ def remove_in_process_application(user, application_details):
     ) # shits fucked... Don't worry about it...  Sometimes you just have to lick the stamp and send it.
 
 
+def get_all_related_characters_from_character(character:EveCharacter):
+    """ helper function for getting all the characters/alts of a particular character"""
+    user_obj = bc_get_user_from_eve_character(character)
+    return bc_get_all_characters_from_user(user_obj)
 
 def bc_get_main_character_name_from_user(user:User):
     """

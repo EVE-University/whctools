@@ -34,7 +34,7 @@ from whctools.app_settings import (
     SHORT_REJECT,
     TRANSIENT_REJECT,
 )
-from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
+from .utils import remove_character_from_acl, add_character_to_acl, log_application_change, remove_all_alts, remove_character_from_community
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -171,7 +171,7 @@ def staff(request):
 
     # @@@ TODO: Add a view for auditing history of all application changes (paginated)
 
-    logger.debug(applications_and_skillset_status)
+
     context = {
         "accepted_chars": chars_accepted,
         "rejected_chars": chars_rejected,
@@ -327,28 +327,25 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
     if whcapplication:  # @@@ move this into template
         member_application = whcapplication[0]
         old_state = member_application.member_state
-        member_application.member_state = Applications.MembershipStates.REJECTED
+
         if reason == "skills":
+            # WHC CL Morra states that only one character on an account has to meet the skill requirements - therefor, if none meet them reject all
             rejection_reason = Applications.RejectionStates.SKILLS
+            notification_names = remove_all_alts(acl_name, member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
+        
         elif reason == "removed":
-            logger.debug(f"Removing {member_application.eve_character.character_name} from {acl_name}")
+            # If a WHC character is forcefully removed, remove all alts as well.
+            logger.debug(f"Removing {member_application.eve_character.character_name} and all their alts from {acl_name}")
             rejection_reason = Applications.RejectionStates.REMOVED
-
-            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
-
+            notification_names = remove_all_alts(acl_name, member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
 
         else:
+            # Other can be used for individual removal of alts that need cleaning up.
+            logger.debug(f"Singleton removal of {member_application.eve_character.character_name}")
             rejection_reason = Applications.RejectionStates.OTHER
-            logger.debug(f"Removing {member_application.eve_character.character_name} from {acl_name}")
-            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, ACLHistory.ApplicationStateChangeReason.REMOVED )
-        member_application.reject_timeout = timezone.now() + datetime.timedelta(
-            days=int(days)
-        )
-
-
-        member_application.reject_reason = rejection_reason
-        member_application.save()
-
+            notification_names = member_application.eve_character.character_name
+            remove_character_from_community(member_application, acl_name, Applications.MembershipStates.REJECTED, rejection_reason, days)
+            
         log_application_change(
             application=member_application,
             old_state=old_state,
@@ -358,10 +355,15 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
         notify.danger(
             member_application.eve_character.character_ownership.user,
             "WHC application",
-            f"Your application to the WHC Community on {member_application.eve_character.character_name} has been rejected.\nReason: {member_application.get_reject_reason_display()}",
+            f"Your application to the WHC Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}" +\
+                "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
         )
 
     return redirect("/whctools/staff")
+
+
+
+
 
 
 
