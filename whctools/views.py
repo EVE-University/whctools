@@ -12,20 +12,29 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
-from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
-from allianceauth.framework.api.evecharacter import get_user_from_evecharacter, get_main_character_from_evecharacter
-from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user, get_all_characters_from_user
-from memberaudit.models import Character, SkillSet
 
+from memberaudit.models import Character
+
+try:
+    # Alliance auth 4.0 only
+    from allianceauth.framework.api.evecharacter import get_user_from_evecharacter, get_main_character_from_evecharacter
+    from allianceauth.framework.api.user import get_all_characters_from_user, get_main_character_name_from_user
+except:
+    #Alliance 3.0 backwards compatibility
+    from .utils import bc_get_main_character_from_evecharacter as get_main_character_from_evecharacter
+    from .utils import bc_get_user_from_eve_character as get_user_from_evecharacter
+    from .utils import bc_get_all_characters_from_user as get_all_characters_from_user
+    from .utils import bc_get_main_character_from_evecharacter as get_main_character_name_from_user
 
 from whctools import __title__
-from whctools.models import Acl, Applications, ApplicationHistory, ACLHistory, AclHistoryRequest
+from whctools.models import Acl, Applications, ACLHistory, AclHistoryRequest
 from whctools.app_settings import (
     LARGE_REJECT,
     MEDIUM_REJECT,
     SHORT_REJECT,
     TRANSIENT_REJECT,
 )
+from .utils import remove_character_from_acl, add_character_to_acl, log_application_change
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
