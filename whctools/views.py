@@ -344,7 +344,8 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
             logger.debug(f"Singleton removal of {member_application.eve_character.character_name}")
             rejection_reason = Applications.RejectionStates.OTHER
             notification_names = member_application.eve_character.character_name
-            remove_character_from_community(member_application, acl_name, Applications.MembershipStates.REJECTED, rejection_reason, days)
+            remove_character_from_community(member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
+            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, reason)
             
         log_application_change(
             application=member_application,

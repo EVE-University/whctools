@@ -12,7 +12,7 @@ except:
     from .utils import bc_get_user_from_eve_character as get_user_from_evecharacter
 
 from .models import Applications, Acl
-from .utils import remove_in_process_application, remove_character_from_acls
+from .utils import remove_in_process_application, update_all_acls_for_character_leaving_alliance
 
 
 logger = get_extension_logger(__name__)
@@ -54,4 +54,4 @@ def process_character_leaving_IVY(instance: EveCharacter):
         # If the character has applied to the community, remove their application
         remove_in_process_application(user, application_details)
 
-    remove_character_from_acls(instance, acls_character_is_on, application_details, user, existing_acl_state)
+    update_all_acls_for_character_leaving_alliance(instance, acls_character_is_on, application_details, user, existing_acl_state)
