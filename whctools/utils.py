@@ -61,7 +61,7 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
         characters = acl_object[0].characters.all()
         for char in characters:
             if char.character_id == char_id:
-                logger.debug(f"Removing {char.character_name} form {acl_name} - setting to {Applications.MembershipStates(to_state).name} for {reason.name}")
+                logger.debug(f"Removing {char.character_name} form {acl_name} - setting to {Applications.MembershipStates(to_state).name} for {reason}")
                 acl_object[0].characters.remove(char)
                 history_entry = ACLHistory(
                     character=char,
@@ -77,7 +77,7 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
                 return
 
 def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
-    logger.debug(f"Adding {eve_character.character_name} to {acl_name} - setting to {Applications.MembershipStates(new_state).name} for reason of {reason.name}")
+    logger.debug(f"Adding {eve_character.character_name} to {acl_name} - setting to {Applications.MembershipStates(new_state).name} for reason of {reason}")
     acl_obj = Acl.objects.get(pk=acl_name)
     if acl_obj:
         acl_obj.characters.add(eve_character)

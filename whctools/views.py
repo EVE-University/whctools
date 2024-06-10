@@ -314,7 +314,10 @@ def accept(request, char_id, acl_name="WHC"):
 @permission_required("whctools.whc_officer")
 def reject(request, char_id, reason, days, acl_name="WHC"):
 
+    logger.debug(f"char_id: {char_id}, reason {reason}, days {days}")
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
+
+    logger.debug(whcapplication)
 
     if whcapplication:  # @@@ move this into template
         member_application = whcapplication[0]
@@ -342,7 +345,7 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
             rejection_reason = Applications.RejectionStates.OTHER
             notification_names = member_application.eve_character.character_name
             remove_character_from_community(member_application, Applications.MembershipStates.REJECTED, rejection_reason, days)
-            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, reason)
+            remove_character_from_acl(member_application.eve_character.character_id, acl_name, old_state, member_application.member_state, rejection_reason)
             
         log_application_change(
             application=member_application,
@@ -455,14 +458,14 @@ def list_acl_members(request, acl_pk=""):
             "corp": character["main"].corporation_name,
             "alliance": character["main"].alliance_name,
             "portrait_url": character["main"].portrait_url(32),
-            "character_id": str(character["main"].character_id)
+            "character_id": character["main"].id
         }
         character["alts"]  = list(sorted([{
             "name": m.character_name,
             "corp": m.corporation_name,
             "alliance": m.alliance_name,
             "portrait_url": m.portrait_url(32),
-            "character_id": str(m.character_id)
+            "character_id": m.id
         } for m in character["alts"] if m.character_name != character["main"]["name"]], key=lambda x: x["name"]))
 
         acl_alt_names = [alt["name"]  for alt in character["alts"]]

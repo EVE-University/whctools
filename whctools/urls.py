@@ -24,5 +24,6 @@ urlpatterns = [
         name="staff_reject",
     ),
     path("staff/action/<char_id>/reset", views.reset, name="staff_reset"),
-    path("staff/action/<acl_pk>/view", views.list_acl_members, name="view_acl_members")
+    path("staff/action/<acl_pk>/view", views.list_acl_members, name="view_acl_members"),
+    path("staff/action/<acl_pk>/view/<char_id>/reject/<reason>/<days>", views.reject, name="acl_staff_reject")
 ]
