@@ -2,12 +2,18 @@ from django.utils import timezone
 import datetime
 
 from allianceauth.services.hooks import get_extension_logger
+
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
 from whctools.models import Acl, ACLHistory, Applications, ApplicationHistory
 from allianceauth.notifications import notify
 from .app_settings import TRANSIENT_REJECT
+
+# 3.0 backwards compatibility
+from allianceauth.eveonline.models import EveCharacter
+from django.contrib.auth.models import User
+from allianceauth.authentication.models import CharacterOwnership
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -107,3 +113,69 @@ def remove_in_process_application(user, application_details):
         "WHC Application",
         f"Your character {application_details.eve_character.character_name} has left IVY or IVY-A and so your application to join WHC has been rejected automatically.",
     ) # shits fucked... Don't worry about it...  Sometimes you just have to lick the stamp and send it.
+
+
+
+def bc_get_main_character_name_from_user(user:User):
+    """
+    3.0 Backwards compatible version of framework.api.user.get_main_character_name_from_user
+    """
+    if user is None:
+        return None
+
+    try:
+        main_character = user.profile.main_character
+    except AttributeError:
+        return None
+
+    return main_character
+    
+def bc_get_all_characters_from_user(user:User):
+    """
+    3.0 Backwards compatible version of framework.api.user.get_all_characters_from_user
+    """
+    if user is None:
+        return []
+
+    try:
+        characters = [
+            char.character for char in CharacterOwnership.objects.filter(user=user)
+        ]
+    except AttributeError:
+        return []
+
+    return characters
+
+def bc_get_user_from_eve_character(character:EveCharacter):
+    """
+    3.0 Backwards compatible version of framework.api.evecharacter import get_user_from_evecharacter
+    """
+    try:
+        userprofile = character.character_ownership.user.profile
+    except (
+        AttributeError,
+        EveCharacter.character_ownership.RelatedObjectDoesNotExist,
+        CharacterOwnership.user.RelatedObjectDoesNotExist,
+    ):
+        # replaces get_sentinel_user wrapper from 4.0
+        # basically getting a user object of some kind to return, even if its an 'empty' one
+        return User.objects.get_or_create(username="deleted")[0]
+
+
+    return userprofile.user
+
+
+def bc_get_main_character_from_evecharacter(character:EveCharacter):
+    """
+    3.0 Backwards compatible version of framework.api.evecharacter import get_main_character_from_evecharacter
+    """
+    try:
+        userprofile = character.character_ownership.user.profile
+    except (
+        AttributeError,
+        EveCharacter.character_ownership.RelatedObjectDoesNotExist,
+        CharacterOwnership.user.RelatedObjectDoesNotExist,
+    ):
+        return None
+
+    return userprofile.main_character

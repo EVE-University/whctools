@@ -4,9 +4,14 @@ from django.db import models
 from django import forms
 
 from allianceauth.eveonline.models import EveCharacter
-from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
 from memberaudit.models import SkillSet
 
+try:
+    # Alliance auth 4.0 only
+    from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
+except:
+    #Alliance 3.0 backwards compatibility
+    from .utils import bc_get_main_character_from_evecharacter as get_main_character_from_evecharacter
 
 
 

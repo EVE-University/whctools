@@ -4,7 +4,13 @@ from celery import shared_task
 
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.authentication.models import EveCharacter
-from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
+try:
+    # Alliance auth 4.0 only
+    from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
+except:
+    #Alliance 3.0 backwards compatibility
+    from .utils import bc_get_user_from_eve_character as get_user_from_evecharacter
+
 from .models import Applications, Acl
 from .utils import remove_in_process_application, remove_character_from_acls
 
