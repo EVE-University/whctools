@@ -27,40 +27,50 @@
                     <h1>All Known Members of {{ acl_name }} Access Control List</h1>
                     <p> The following charcters are known to have acces to the ACl {{ acl_name }} - This list should be considered the truth, and if the ACL in game differs it should be adjusted to match this list!</p>
                     <table class="table">
-                        <tr>
-                            <th>Portrait</th>
-                            <th>Character</th>
-                            <th>Alt</th>
-                            <th>Corp</th>
-                            <th>Alliance</th>
-                        </tr>
-                        {% for member in members %}
-                        <tr>
-                            <td> <img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"> </td>
-                            <td> {{member.main.name}} </td>
-                            <td> <i>Main</i></td>
-                            <td> {{member.main.corp}}</td>
-                            <td> {{member.main.alliance}}</td>
-                        </tr>
-                            {% for alt in member.alts %}
+                        <thead>
                             <tr>
-                                <td>  ⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
-                                <td><div class="whctools-alt-tag whctools-green-bg">Member</div> </td>
-                                <td> {{alt.name}} </td>
-                                <td> {{alt.corp}}</td>
-                                <td> {{alt.alliance}}</td>
+                                <th>Portrait</th>
+                                <th>Character</th>
+                                <th>Alt</th>
+                                <th>Corp</th>
+                                <th>Alliance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
+                                <td><img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"></td>
+                                <td>{{member.main.name}}</td>
+                                <td><i>Main</i></td>
+                                <td>{{member.main.corp}}</td>
+                                <td>{{member.main.alliance}}</td>
+                                <td>
+                                    <a href="/whctools/staff/action/{{member.main.character_id}}/reject/removed/{{reject_timers.large_reject}}" class="whcbutton btn btn-danger" role="button">Kick All</a>
+                                </td>
+                            </tr>
+                            {% for alt in member.alts %}
+                            <tr class="whctools-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
+                                <td>⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
+                                <td><div class="whctools-alt-tag whctools-green-bg">Member</div></td>
+                                <td>{{alt.name}}</td>
+                                <td>{{alt.corp}}</td>
+                                <td>{{alt.alliance}}</td>
+                                <td><a href="/whctools/staff/action/{{alt.character_id}}/reject/other/{{reject_timers.medium_reject}}" class="whcbutton btn btn-warning" role="button">Remove Alt</a></td>
                             </tr>
                             {% endfor %}
                             {% for alt in member.complete_alts %}
-                            <tr>
-                                <td>  ⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"> </td>
-                                <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div> </td>
-                                <td> {{alt.name}}</td>
-                                <td> {{alt.corp}}</td>
-                                <td> {{alt.alliance}}</td>
+                            <tr class="whc-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
+                                <td>⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
+                                <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div></td>
+                                <td>{{alt.name}}</td>
+                                <td>{{alt.corp}}</td>
+                                <td>{{alt.alliance}}</td>
+                                <td></td>
                             </tr>
                             {% endfor %}
-                        {% endfor %}
+                            {% endfor %}
+                        </tbody>
                     </table>
                 </div>
                 <div id="after_date" class="panel panel-default tab-pane {% if date_selected %} active {% endif %}">
@@ -111,6 +121,24 @@
 {% endblock %}
 
 {% block extra_javascript %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var mainRows = document.querySelectorAll('.whctools-main-row');
+        mainRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                var memberId = row.getAttribute('data-member-id');
+                var altRows = document.querySelectorAll('.whctools-alt-row[data-parent-id="' + memberId + '"]');
+                altRows.forEach(function(altRow) {
+                    if (altRow.style.display === 'none') {
+                        altRow.style.display = 'table-row';
+                    } else {
+                        altRow.style.display = 'none';
+                    }
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}
 
 {% block extra_script %}
