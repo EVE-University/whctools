@@ -1,18 +1,22 @@
 """Models."""
 
-from django.db import models
+from memberaudit.models import SkillSet
+
 from django import forms
+from django.db import models
 
 from allianceauth.eveonline.models import EveCharacter
-from memberaudit.models import SkillSet
 
 try:
     # Alliance auth 4.0 only
-    from allianceauth.framework.api.evecharacter import get_main_character_from_evecharacter
-except:
-    #Alliance 3.0 backwards compatibility
-    from .utils import bc_get_main_character_from_evecharacter as get_main_character_from_evecharacter
-
+    from allianceauth.framework.api.evecharacter import (
+        get_main_character_from_evecharacter,
+    )
+except Exception:
+    # Alliance 3.0 backwards compatibility
+    from .aa3compat import (
+        bc_get_main_character_from_evecharacter as get_main_character_from_evecharacter,
+    )
 
 
 class General(models.Model):
@@ -47,12 +51,12 @@ class Applications(models.Model):
         REMOVED = 3, "Removed From Community"
         LEFT_ALLIANCE = 4, "Left Alliance"
         LEFT_COMMUNITY = 5, "Voluntarily Left"
-        OTHER = 99, "Undisclosed"   
+        OTHER = 99, "Undisclosed"
 
     eve_character = models.OneToOneField(
         EveCharacter, on_delete=models.CASCADE, primary_key=True
     )
-    
+
     member_state = models.IntegerField(
         choices=MembershipStates.choices, default=MembershipStates.NOTAMEMBER
     )
@@ -62,7 +66,6 @@ class Applications(models.Model):
     reject_timeout = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
-    
 
     def __str__(self) -> str:
         return self.eve_character.character_name
@@ -77,19 +80,23 @@ class Applications(models.Model):
 
 class ApplicationHistory(models.Model):
 
-
-    date_of_change=models.DateTimeField(auto_now_add=True)
+    date_of_change = models.DateTimeField(auto_now_add=True)
     old_state = models.IntegerField(
-        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+        choices=Applications.MembershipStates.choices,
+        default=Applications.MembershipStates.NOTAMEMBER,
     )
     new_state = models.IntegerField(
-        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+        choices=Applications.MembershipStates.choices,
+        default=Applications.MembershipStates.NOTAMEMBER,
     )
     reject_reason = models.IntegerField(
-        choices=Applications.RejectionStates.choices, default=Applications.RejectionStates.NONE
+        choices=Applications.RejectionStates.choices,
+        default=Applications.RejectionStates.NONE,
     )
-    application = models.ForeignKey(Applications, null=True, on_delete=models.SET_NULL, related_name="app_history")
-    
+    application = models.ForeignKey(
+        Applications, null=True, on_delete=models.SET_NULL, related_name="app_history"
+    )
+
     class Meta:
         ordering = ["date_of_change"]
         verbose_name_plural = "Application Log"
@@ -107,14 +114,12 @@ class Acl(models.Model):
     description = models.TextField(null=True, blank=True)
     characters = models.ManyToManyField(EveCharacter)
     skill_sets = models.ManyToManyField(SkillSet)
-    
+
     def __str__(self):
         return self.name
-    
+
 
 class ACLHistory(models.Model):
-
-
 
     class ApplicationStateChangeReason(models.IntegerChoices):
         NONE = 0, "No Change / Initial Acceptance"
@@ -124,27 +129,30 @@ class ACLHistory(models.Model):
         LEFT_GROUP = 4, "Left on their own choice"
         OTHER = 99, "Other: See details"
 
-    date_of_change=models.DateTimeField()
+    date_of_change = models.DateTimeField()
     old_state = models.IntegerField(
-        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+        choices=Applications.MembershipStates.choices,
+        default=Applications.MembershipStates.NOTAMEMBER,
     )
     new_state = models.IntegerField(
-        choices=Applications.MembershipStates.choices, default=Applications.MembershipStates.NOTAMEMBER
+        choices=Applications.MembershipStates.choices,
+        default=Applications.MembershipStates.NOTAMEMBER,
     )
     reason_for_change = models.IntegerField(
-        choices=ApplicationStateChangeReason.choices, default = ApplicationStateChangeReason.NONE
+        choices=ApplicationStateChangeReason.choices,
+        default=ApplicationStateChangeReason.NONE,
     )
     changed_by = models.CharField(max_length=225, null=False, blank=True)
-    acl = models.ForeignKey(Acl, on_delete=models.CASCADE, related_name='changes')
+    acl = models.ForeignKey(Acl, on_delete=models.CASCADE, related_name="changes")
     character = models.ForeignKey(EveCharacter, null=True, on_delete=models.SET_NULL)
 
+
 class DateTimeInput(forms.DateTimeInput):
-    input_type = 'datetime-local'
+    input_type = "datetime-local"
+
 
 class AclHistoryRequest(forms.ModelForm):
     class Meta:
-        model=ACLHistory
-        fields=["date_of_change"]
-        widgets = {
-            "date_of_change": DateTimeInput()
-        }
+        model = ACLHistory
+        fields = ["date_of_change"]
+        widgets = {"date_of_change": DateTimeInput()}
