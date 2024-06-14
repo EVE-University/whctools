@@ -179,3 +179,17 @@ def remove_in_process_application(user, application_details):
         logger.error(
             f"Could not remove in process application of {application_details} for user: {user}"
         )
+
+
+def generate_raw_copy_for_acl(acl_characters: dict):
+    output = []
+    for user in acl_characters.values():
+        main_character_name = user["main"]["name"]
+        output.append(f"Main: {main_character_name}")
+        alts = user["alts"]
+        for char in alts:
+            output.append(f"Alt: {char['name']}")
+
+        output.append("----")
+
+    return "\n".join(output)
