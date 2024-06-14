@@ -31,7 +31,7 @@ except Exception:
         bc_get_all_characters_from_user as get_all_characters_from_user,
     )
     from .aa3compat import (
-        bc_get_main_character_from_evecharacter as get_main_character_name_from_user,
+        bc_get_main_character_name_from_user as get_main_character_name_from_user,
     )
 
 from whctools import __title__
@@ -67,13 +67,22 @@ def index(request):
     unregistered_chars = []
     now = timezone.now()
     main_character_name = get_main_character_name_from_user(request.user)
+
+    try:
+        main_character_id = request.user.profile.main_character.character_id
+    except AttributeError:
+        main_character_id = None
+
     main_app_status = Applications.MembershipStates.NOTAMEMBER
     for eve_char in owned_chars_query:
-        if eve_char.character_name == main_character_name:
+        logger.debug(f"checking {eve_char} vs {main_character_name}")
+        if eve_char == main_character_name:
             try:
                 main_app_status = eve_char.applications.member_state
+                logger.debug(f"Mains app status: {main_app_status}")
                 break
             except Exception:
+                logger.debug("No app status on main")
                 pass
 
     for eve_char in owned_chars_query:
@@ -104,6 +113,9 @@ def index(request):
                 application.reject_reason = Applications.RejectionStates.NONE
                 application.save()
 
+            logger.debug(
+                f"{main_character_id} == {eve_char.character_id} ? {main_character_id == eve_char.character_id}"
+            )
             auth_characters.append(
                 {
                     "application": application,
@@ -112,17 +124,15 @@ def index(request):
                     "portrait_url": eve_char.portrait_url(64),
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
-                    "is_main": main_character_name == eve_char.character_name,
+                    "is_main": main_character_id == eve_char.character_id,
                     "is_main_member": main_app_status
                     == Applications.MembershipStates.ACCEPTED,
                 }
             )
 
-    try:
-        main_character_id = request.user.profile.main_character.character_id
-    except AttributeError:
-        main_character_id = None
+            logger.debug(auth_characters)
 
+    logger.debug(f"Main character id = {main_character_id}")
     context = {
         "is_officer": request.user.has_perm("whctools.whc_officer"),
         "auth_characters": auth_characters,

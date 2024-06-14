@@ -2,6 +2,12 @@ from django.contrib.auth.models import User
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
+from allianceauth.services.hooks import get_extension_logger
+from app_utils.logging import LoggerAddTag
+
+from whctools import __title__
+
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 def get_all_related_characters_from_character(character: EveCharacter):
@@ -66,6 +72,7 @@ def bc_get_main_character_from_evecharacter(character: EveCharacter):
     """
     try:
         userprofile = character.character_ownership.user.profile
+
     except (
         AttributeError,
         EveCharacter.character_ownership.RelatedObjectDoesNotExist,
