@@ -76,11 +76,9 @@ def index(request):
 
     main_app_status = Applications.MembershipStates.NOTAMEMBER
     for eve_char in owned_chars_query:
-        logger.debug(f"checking {eve_char} vs {main_character_name}")
         if eve_char == main_character_name:
             try:
                 main_app_status = eve_char.applications.member_state
-                logger.debug(f"Mains app status: {main_app_status}")
                 break
             except Exception:
                 logger.debug("No app status on main")
@@ -128,9 +126,6 @@ def index(request):
                 }
             )
 
-            logger.debug(auth_characters)
-
-    logger.debug(f"Main character id = {main_character_id}")
     context = {
         "is_officer": request.user.has_perm("whctools.whc_officer"),
         "auth_characters": auth_characters,
@@ -583,7 +578,6 @@ def list_acl_members(request, acl_pk=""):
             )
         )
 
-    logger.info(alphabetical_mains)
     context = {
         "members": alphabetical_mains.values(),
         "acl_name": acl_pk,
