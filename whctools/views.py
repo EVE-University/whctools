@@ -160,17 +160,26 @@ def staff(request):
         characters_skillset_status = {}
 
         for char in all_characters:
-            ma_character: Character = char.memberaudit_character
-            ma_character.update_skill_sets()
-            for acl in existing_acls:
-                characters_skillset_status.setdefault(char.character_name, {})
-                for skillset in acl.skill_sets.all():
-                    characters_skillset_status[char.character_name][skillset.name] = (
-                        ma_character.skill_set_checks.filter(skill_set=skillset)
-                        .first()
-                        .can_fly
-                    )
-                    skillset_names.add(skillset.name)
+            try:
+                ma_character: Character = char.memberaudit_character
+            except Exception as e:
+                logger.error(
+                    f"Could not get MA Character for {char} belonging to {eve_char} - error: {e}"
+                )
+                continue
+            else:
+                ma_character.update_skill_sets()
+                for acl in existing_acls:
+                    characters_skillset_status.setdefault(char.character_name, {})
+                    for skillset in acl.skill_sets.all():
+                        characters_skillset_status[char.character_name][
+                            skillset.name
+                        ] = (
+                            ma_character.skill_set_checks.filter(skill_set=skillset)
+                            .first()
+                            .can_fly
+                        )
+                        skillset_names.add(skillset.name)
 
         applications_and_skillset_status.append(
             {"application": application, "skill_sets": characters_skillset_status}
