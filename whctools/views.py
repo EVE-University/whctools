@@ -31,7 +31,7 @@ except Exception:
         bc_get_all_characters_from_user as get_all_characters_from_user,
     )
     from .aa3compat import (
-        bc_get_main_character_from_evecharacter as get_main_character_name_from_user,
+        bc_get_main_character_name_from_user as get_main_character_name_from_user,
     )
 
 from whctools import __title__
@@ -45,6 +45,7 @@ from whctools.models import Acl, ACLHistory, AclHistoryRequest, Applications
 
 from .utils import (
     add_character_to_acl,
+    generate_raw_copy_for_acl,
     log_application_change,
     remove_all_alts,
     remove_character_from_acl,
@@ -67,13 +68,20 @@ def index(request):
     unregistered_chars = []
     now = timezone.now()
     main_character_name = get_main_character_name_from_user(request.user)
+
+    try:
+        main_character_id = request.user.profile.main_character.character_id
+    except AttributeError:
+        main_character_id = None
+
     main_app_status = Applications.MembershipStates.NOTAMEMBER
     for eve_char in owned_chars_query:
-        if eve_char.character_name == main_character_name:
+        if eve_char == main_character_name:
             try:
                 main_app_status = eve_char.applications.member_state
                 break
             except Exception:
+                logger.debug("No app status on main")
                 pass
 
     for eve_char in owned_chars_query:
@@ -112,16 +120,11 @@ def index(request):
                     "portrait_url": eve_char.portrait_url(64),
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
-                    "is_main": main_character_name == eve_char.character_name,
+                    "is_main": main_character_id == eve_char.character_id,
                     "is_main_member": main_app_status
                     == Applications.MembershipStates.ACCEPTED,
                 }
             )
-
-    try:
-        main_character_id = request.user.profile.main_character.character_id
-    except AttributeError:
-        main_character_id = None
 
     context = {
         "is_officer": request.user.has_perm("whctools.whc_officer"),
@@ -575,12 +578,12 @@ def list_acl_members(request, acl_pk=""):
             )
         )
 
-    logger.info(alphabetical_mains)
     context = {
         "members": alphabetical_mains.values(),
         "acl_name": acl_pk,
         "date_selected": date_selected,
         "acl_changes": parsed_acl_history,
+        "raw_acl_copy_text": generate_raw_copy_for_acl(alphabetical_mains),
         "acl_history_request": AclHistoryRequest(),
         "reject_timers": {
             "large_reject": LARGE_REJECT,
