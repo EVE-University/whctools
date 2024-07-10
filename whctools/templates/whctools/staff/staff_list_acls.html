@@ -1,0 +1,23 @@
+{% extends 'whctools/base_staff.html' %}
+
+{% block staff_page %}
+<div id="list_acls" class="panel panel-default tab-pane active">
+    <table class="table">
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+        {% for acl in existing_acls %}
+        <tr class="whctools-tr">
+            <td>
+                {{acl.name}}
+            </td>
+            <td>{{acl.description}}</td>
+            <td> <a href="/whctools/staff/action/{{acl.pk}}/view" class="whcbutton btn btn-success" role="button">View Members</a> </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}

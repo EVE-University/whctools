@@ -5,10 +5,7 @@
 {% load humanize %}
 
 {% block details %}
-<ul class="nav nav-tabs">
-    <li class="inactive"><a href="/whctools">Apps</a></li>
-    <li class="active"><a>Staff</a></li>
-</ul>
+{% include 'whctools/staff/nav_pills.html' %}
 
 <div class="tab-content">
     <div id="staff" class="whcpanel panel panel-primary tab-pane active">
@@ -19,7 +16,6 @@
 
             {% comment %} @@@ Probably would be better to move this into individual files {% endcomment %}
             <ul class="nav nav-pills">
-                <li><a href="/whctools/staff">Back</a></li>
                 <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#all_members">All Members</a></li>
                 <li {% if date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#after_date">Filter After</a></li>
                 <li class="pull-right">
