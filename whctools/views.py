@@ -257,24 +257,18 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
                 days,
             )
 
-        elif reason == "skills":
-            # WHC CL Morra states that only one character on an account has to meet the skill requirements - therefor, if none meet them reject all
-            rejection_reason = Applications.RejectionStates.SKILLS
-            notification_names = remove_all_alts(
-                acl_name,
-                member_application,
-                Applications.MembershipStates.REJECTED,
-                rejection_reason,
-                days,
-            )
-
         else:
             # Other can be used for individual removal of alts that need cleaning up.
-            # note: currently only used on the reject an openapplication - additional @@@ TODO to hook up to the remove membership page
+            # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
             logger.debug(
                 f"Singleton removal of {member_application.eve_character.character_name}"
             )
-            rejection_reason = Applications.RejectionStates.OTHER
+
+            rejection_reason = (
+                Applications.RejectionStates.SKILLS
+                if reason == "skills"
+                else Applications.RejectionStates.OTHER
+            )
             notification_names = member_application.eve_character.character_name
             remove_character_from_community(
                 member_application,
