@@ -229,7 +229,7 @@ def accept(request, char_id, acl_name="WHC"):
 # @@@ TODO - Add to the views.html templates the ability to remove from specific acls
 @login_required
 @permission_required("whctools.whc_officer")
-def reject(request, char_id, reason, days, acl_name="WHC"):
+def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
 
     logger.debug(f"char_id: {char_id}, reason {reason}, days {days}")
     whcapplication = Applications.objects.filter(eve_character_id=char_id)
@@ -294,8 +294,10 @@ def reject(request, char_id, reason, days, acl_name="WHC"):
             f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
             + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
         )
-
-    return redirect("/whctools/staff/open")
+    if source == "acl":
+        return redirect(f"/whctools/staff/action/{acl_name}/view")
+    else:
+        return redirect("/whctools/staff/open")
 
 
 @login_required
@@ -471,6 +473,8 @@ def list_acl_members(request, acl_pk=""):
     return render(request, "whctools/list_acl_members.html", context)
 
 
+@login_required
+@permission_required("whctools.whc_officer")
 def get_skills(request, char_id):
     logger.debug(f"Get Skills for {char_id}")
     skill_sets = getSkills(char_id)

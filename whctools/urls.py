@@ -13,7 +13,7 @@ urlpatterns = [
     # Staff actions
     path("staff/action/<char_id>/accept/<acl_name>", views.accept, name="staff_accept"),
     path(
-        "staff/action/<char_id>/reject/<reason>/<days>",
+        "staff/action/<char_id>/reject/<reason>/<days>/<source>",
         views.reject,
         name="staff_reject",
     ),
