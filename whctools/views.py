@@ -82,14 +82,19 @@ def index(request):
     except AttributeError:
         main_character_id = None
 
-    main_app_status = Applications.MembershipStates.NOTAMEMBER
+    is_main_accepted = False
     for eve_char in owned_chars_query:
-        logger.debug(
-            f"main: {main_character_name} - checking against: {eve_char.character_name}"
-        )
+
         if eve_char.character_name == main_character_name:
             try:
-                main_app_status = eve_char.applications.member_state
+                is_main_accepted = (
+                    eve_char.applications.member_state
+                    == Applications.MembershipStates.ACCEPTED
+                )
+
+                logger.debug(
+                    f"main character found: {main_character_name}, app status is {eve_char.applications.get_member_state_display()}, so is_main_accepted is {is_main_accepted}"
+                )
                 break
             except Exception:
                 logger.debug("No app status on main")
@@ -132,8 +137,7 @@ def index(request):
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
                     "is_main": main_character_id == eve_char.character_id,
-                    "is_main_member": main_app_status
-                    == Applications.MembershipStates.ACCEPTED,
+                    "is_main_member": is_main_accepted,
                 }
             )
 
