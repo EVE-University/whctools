@@ -1,0 +1,9 @@
+<ul class="nav nav-tabs">
+    <li><a href="/whctools">Apps</a></li>
+    <li class="{% if page == 'Open Apps' %}active{% else %}{% endif %}"><a href="/whctools/staff/open">Staff: Applications Awaiting Approval</a></li>
+    <li class="{% if page == 'Rejected Apps' %}active{% else %}{% endif %}"><a href="/whctools/staff/rejected">Staff: Rejected Applications</a></li>
+    {% comment %}<li class="{% if page == 'ACL Lists' %}active{% else %}{% endif %}"><a href="/whctools/staff/list_acls">Staff: ACL Lists</a></li>
+    waiting on the above until we need multiple acls
+    {% endcomment %}
+    <li class="{% if page == 'ACL Lists' %}active{% else %}{% endif %}"><a href="/whctools/staff/action/WHC/view">Staff: WHC ACL</a></li>
+</ul>

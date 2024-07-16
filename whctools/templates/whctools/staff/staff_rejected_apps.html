@@ -1,0 +1,43 @@
+{% extends 'whctools/base_staff.html' %}
+
+{% block staff_page %}
+<div id="rejected" class="panel panel-default tab-pane active">
+    <table class="table">
+        <tr>
+            <th>Portrait</th>
+            <th>Character</th>
+            <th>Main</th>
+            <th>MA link</th>
+            <th>When</th>
+            <th>Remaining</th>
+            <th>Reason</th>
+            <th>Action</th>
+        </tr>
+        {% for char in rejected_chars %}
+        <tr class="whctools-tr">
+            <td>
+                <img src="{{ char.eve_character.portrait_url }}">
+            </td>
+            <td>{{char.eve_character.character_name}}</td>
+            <td><i>{{char.get_main_character.character_name}}</i></td>
+            <td>
+                <a href="/member-audit/character_viewer/{{char.eve_character.memberaudit_character.id}}" target="_blank" class="whcbutton btn btn-primary" role="button">Member Audit</a>
+            </td>
+            <td>
+                <p>{{char.last_updated}}</p>
+            </td>
+            <td>
+                <p>{{char.reject_timeout|timeuntil}}</p>
+            </td>
+            <td>
+                <p>{{char.get_reject_reason_display}}</p>
+            </td>
+            <td>
+                <a href="/whctools/staff/action/{{char.eve_character.id}}/reset" class="whcbutton btn btn-danger" role="button">Reset</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}

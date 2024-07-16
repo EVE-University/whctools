@@ -6,8 +6,7 @@
 
 {% if is_officer %}
 <ul class="nav nav-tabs">
-    <li class="active"><a>My Apps</a></li>
-    <li class="inactive"><a href="/whctools/staff">Staff</a></li>
+    {% include 'whctools/staff/nav_pills.html' %}
 </ul>
 {% endif %}
 
