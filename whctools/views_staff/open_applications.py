@@ -1,8 +1,18 @@
 from memberaudit.models import Character
 
 from allianceauth.eveonline.models import EveCharacter
-from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
-from allianceauth.framework.api.user import get_all_characters_from_user
+
+try:
+    # Alliance auth 4.0 only
+    from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
+    from allianceauth.framework.api.user import get_all_characters_from_user
+except Exception:
+    # Alliance 3.0 backwards compatibility
+    from ..aa3compat import bc_get_user_from_eve_character as get_user_from_evecharacter
+    from ..aa3compat import (
+        bc_get_all_characters_from_user as get_all_characters_from_user,
+    )
+
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
