@@ -40,6 +40,7 @@ except Exception:
 
 from whctools import __title__
 from whctools.app_settings import (
+    ALLOWED_ALLIANCES,
     LARGE_REJECT,
     MEDIUM_REJECT,
     SHORT_REJECT,
@@ -118,6 +119,10 @@ def index(request):
                 }
             )
         else:
+            is_in_approved_uni_alliance = eve_char.alliance_id in ALLOWED_ALLIANCES
+            logger.debug(
+                f"Character {eve_char.character_name} is in approved alliances: {is_in_approved_uni_alliance}"
+            )
             reject_timeout = application.reject_timeout - now
             timedout = reject_timeout.total_seconds() < 0
             if (
@@ -138,6 +143,7 @@ def index(request):
                     "is_shared": macharacter.is_shared,
                     "is_main": main_character_id == eve_char.character_id,
                     "is_main_member": is_main_accepted,
+                    "is_in_approved_alliance": is_in_approved_uni_alliance,
                 }
             )
 

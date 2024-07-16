@@ -24,7 +24,11 @@
                                     </div>
                                     <div class="media-body">
                                     <h4 class="media-heading">{{auth_char.char_name}}</h4>
-                                    {% if auth_char.is_shared %}
+                                    {% if not auth_char.is_in_approved_alliance%}
+                                        <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
+                                            Character is not in IVY or IVY-A, and cannot apply.
+                                        </p>
+                                    {% elif auth_char.is_shared %}
                                     {% comment %} <p>{{ auth_char.rejected_reason }}</p>
                                     <p>{{ auth_char.rejected_timeout }}</p> {% endcomment %}
                                         {% if auth_char.is_main or auth_char.is_main_member %}
