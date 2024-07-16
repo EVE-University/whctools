@@ -16,8 +16,11 @@
             <td>
                 <img src="{{ char.application.eve_character.portrait_url }}">
             </td>
-            <td>{{ char.application.eve_character.character_name }}</td>
-            <td><i>{{ char.application.get_main_character.character_name }}</i></td>
+            <td>{{ char.application.eve_character.character_name }}
+            <br><span style="font-size: 80%;"> A: <i><b> {{ char.application.get_main_character.alliance_name }}</b></i></span>
+        </td>
+            <td><i>{{ char.application.get_main_character.character_name }}</i>
+            </td>
             <td>{{ char.application.last_updated|timesince }}</td>
             <td>
                 <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character_id }}">Check Skills</button>
