@@ -24,7 +24,7 @@ def bc_get_main_character_name_from_user(user: User):
         return None
 
     try:
-        main_character = user.profile.main_character
+        main_character = user.profile.main_character.character_name
     except AttributeError:
         return None
 
