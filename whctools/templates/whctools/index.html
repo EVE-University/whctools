@@ -40,7 +40,7 @@
                                                 <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Withdraw</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.REJECTED%}
-                                                <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>{{auth_char.char_name}} is currently under a timeout for: {{ auth_char.application.get_reject_reason_display }}</p>
+                                                <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i> {{auth_char.char_name}} is currently under a timeout for: {{ auth_char.application.get_reject_reason_display }}</p>
                                                 <p class="whctools-error">You will be able to apply again in: {{auth_char.application.reject_timeout|timeuntil}}</p>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.ACCEPTED%}
