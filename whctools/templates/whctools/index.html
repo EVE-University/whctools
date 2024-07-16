@@ -27,6 +27,7 @@
                                     {% if not auth_char.is_in_approved_alliance%}
                                         <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
                                             Character is not in IVY or IVY-A, and cannot apply.
+                                            {% comment %} TODO @@@ - remove hardcoded names here {% endcomment %}
                                         </p>
                                     {% elif auth_char.is_shared %}
                                     {% comment %} <p>{{ auth_char.rejected_reason }}</p>
