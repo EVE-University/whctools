@@ -29,12 +29,13 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Portrait</th>
-                                <th>Character</th>
-                                <th>Alt</th>
-                                <th>Corp</th>
-                                <th>Alliance</th>
-                                <th>Actions</th>
+                                <th style="width: 3%">Portrait</th>
+                                <th style="width: 15%;">Character</th>
+                                <th style="width: 5%;">Alt</th>
+                                <th style="width: 12%;">Corp</th>
+                                <th style="width: 12%;">Alliance</th>
+                                <th style="width: 10%;">Actions</th>
+                                <th style="width: 3%;"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -42,13 +43,25 @@
                             <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
                                 <td><img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"></td>
                                 <td>{{member.main.name}}</td>
+                                {% if member.main.is_on_acl %}
                                 <td><i>Main</i></td>
+                                {% else %}
+                                <td><div class="whctools-alt-tag whctools-red-bg">MAIN NOT ON ACL</div>
+                                {% if member.alts|length != 0  %}
+                                <br><span style="font-size: 80%;">Has Alts still on ACL</span><br>
+                                {% endif %}
+                                </td>
+                                {% endif %}
                                 <td>{{member.main.corp}}</td>
                                 <td>{{member.main.alliance}}</td>
                                 <td>
                                     <a href="/whctools/staff/action/{{member.main.character_id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a>
                                 </td>
-                                <td><i class="fa-solid fa-angles-down"></i></td>
+                                <td>
+                                {% if member.alts|length != 0  %}
+                                <i class="fa-solid fa-angles-down"></i>
+                                {% endif %}
+                                </td>
                             </tr>
                             {% for alt in member.alts %}
                             <tr class="whctools-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
@@ -58,6 +71,7 @@
                                 <td>{{alt.corp}}</td>
                                 <td>{{alt.alliance}}</td>
                                 <td><a href="/whctools/staff/action/{{alt.character_id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Alt</a></td>
+                                <td></td>
                             </tr>
                             {% endfor %}
                             {% for alt in member.complete_alts %}
