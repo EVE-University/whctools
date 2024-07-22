@@ -25,3 +25,11 @@ Here's a list of available settings for this app. These settings can be configur
 - **WHCTOOLS_LARGE_REJECT**:
   - *Description*: Rejection timer in days for being kicked from the community.
   - *Default*: `WHCTOOLS_LARGE_REJECT = 356`
+
+- **WHCTOOLS_LIMIT_TO_ALLIANCES**:
+  - *Description*: Limits applications to ACLs to alliance IDs defined in WHCTOOLS_ALLIANCES
+  - *Default*: `WHCTOOLS_LIMIT_TO_ALLIANCES = False`
+
+- **WHCTOOLS_ALLIANCES**:
+  - *Description*: Alliance IDs that are allowed to apply ACLs controlled by this tool
+  - *Default*: `WHCTOOLS_ALLIANCES = [937872513, 99010193]`
