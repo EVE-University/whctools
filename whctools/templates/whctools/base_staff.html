@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-    function showPopup(characterId) {
+    function showPopup(characterId, callback) {
         $.ajax({
             url: `/whctools/staff/getSkills/${characterId}`,
             success: function(data) {
@@ -89,6 +89,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     console.error('Data is not in the expected format:', data);
                 }
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            },
+
+            error: function() {
+                // Re-enable the button and remove the spinner cursor if the AJAX request fails
+                if (typeof callback === 'function') {
+                    callback();
+                }
             }
         });
     }
@@ -99,8 +110,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     $(document).ready(function() {
         $('.openSkillcheckPopup').click(function() {
-            var characterId = $(this).data('character-id');
-            showPopup(characterId);
+            var button = $(this);
+            var characterId = button.data('character-id');
+
+            // Disable the button and change cursor to spinner
+            button.prop('disabled', true);
+            $('body').addClass('locked-cursor');
+
+            showPopup(characterId, function() {
+                // Re-enable the button and remove spinner cursor after the popup content is loaded
+                button.prop('disabled', false);
+                $('body').removeClass('locked-cursor');
+            });
         });
     });
 
