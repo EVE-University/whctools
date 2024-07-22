@@ -29,6 +29,7 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>{% comment %}Alt indicator column{% endcomment %}</th>
                                 <th>Portrait</th>
                                 <th>Character</th>
                                 <th>Alt</th>
@@ -40,6 +41,7 @@
                         <tbody>
                             {% for member in members %}
                             <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
+                                <td>{% if member.alts|length>0 %}<i class="alt-caret fa-solid fa-caret-right"></i>{% endif %}</td>
                                 <td><img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"></td>
                                 <td>{{member.main.name}}</td>
                                 <td><i>Main</i></td>
@@ -48,11 +50,11 @@
                                 <td>
                                     <a href="/whctools/staff/action/{{member.main.character_id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a>
                                 </td>
-                                <td><i class="fa-solid fa-angles-down"></i></td>
                             </tr>
                             {% for alt in member.alts %}
                             <tr class="whctools-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
-                                <td>⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
+                                <td>⤷</td>
+                                <td><img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
                                 <td><div class="whctools-alt-tag whctools-green-bg">Member</div></td>
                                 <td>{{alt.name}}</td>
                                 <td>{{alt.corp}}</td>
@@ -62,7 +64,8 @@
                             {% endfor %}
                             {% for alt in member.complete_alts %}
                             <tr class="whc-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
-                                <td>⤷ <img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
+                                <td>⤷</td>
+                                <td><img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
                                 <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div></td>
                                 <td>{{alt.name}}</td>
                                 <td>{{alt.corp}}</td>
@@ -141,14 +144,22 @@
         mainRows.forEach(function(row) {
             row.addEventListener('click', function() {
                 var memberId = row.getAttribute('data-member-id');
+                var showAlts = row.getAttribute('show-alts');
+                var caretIcon = document.querySelector('.whctools-main-row[data-member-id="' + memberId + '"] td i.alt-caret');
                 var altRows = document.querySelectorAll('.whctools-alt-row[data-parent-id="' + memberId + '"]');
-                altRows.forEach(function(altRow) {
-                    if (altRow.style.display === 'none') {
-                        altRow.style.display = 'table-row';
+                if( altRows.length>0 ) {
+                    if( showAlts ) {
+                        row.removeAttribute('alts-visible');
+                        caretIcon.classList.add('fa-caret-right');
+                        caretIcon.classList.remove('fa-caret-down');
+                        altRows.forEach(function(altRow) { altRow.style.display = 'none'; });
                     } else {
-                        altRow.style.display = 'none';
+                        row.setAttribute('alts-visible', true);
+                        caretIcon.classList.remove('fa-caret-right');
+                        caretIcon.classList.add('fa-caret-down');
+                        altRows.forEach(function(altRow) { altRow.style.display = 'table-row'; });
                     }
-                });
+                }
             });
         });
 
