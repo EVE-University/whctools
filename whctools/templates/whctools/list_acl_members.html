@@ -126,8 +126,10 @@
         <div class="whctools-scrollable-textbox">
             <p>{{ raw_acl_copy_text|linebreaksbr }}</p>
         </div>
+        <button id="copyToClipboardButton" class="btn btn-primary">Copy to Clipboard</button>
     </div>
 </div>
+
 
 {% endblock %}
 
@@ -168,6 +170,19 @@
                 modal.style.display = "none";
             }
         }
+        // Copy to Clipboard functionality
+        var copyButton = document.getElementById("copyToClipboardButton");
+        copyButton.addEventListener('click', function() {
+            var textToCopy = document.querySelector('.whctools-scrollable-textbox').innerText;
+
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                console.log('Text copied to clipboard');
+                alert('Text copied to clipboard');
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy text to clipboard');
+            });
+        });
     });
 
     var kickAllButtons = document.querySelectorAll('#kick-all');
