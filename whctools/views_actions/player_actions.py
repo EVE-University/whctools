@@ -8,6 +8,7 @@ from whctools import __title__
 from ..app_settings import TRANSIENT_REJECT
 from ..models import ACLHistory, Applications
 from ..utils import (
+    force_update_memberaudit,
     log_application_change,
     remove_character_from_acl,
     remove_character_from_community,
@@ -39,6 +40,9 @@ def submit_application(request, char_id):
     # Check if rejected
     if eve_char_application.member_state == Applications.MembershipStates.REJECTED:
         return "This character has been rejected previously and is still under cooldown for another application. Please contact WHC Community Coordinators on Discord"
+
+    # Queue up a forced memberaudit update
+    force_update_memberaudit(eve_char_application.eve_character)
 
     eve_char_application.member_state = Applications.MembershipStates.APPLIED
     eve_char_application.save()
