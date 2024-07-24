@@ -50,7 +50,7 @@
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.ACCEPTED%}
                                             <p class="whctools-good">You are a member!</p>
-                                            <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Leave</a>
+                                            <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-danger" role="button">Leave</a>
                                             {% endif %}
                                         {% else %}
                                         <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
