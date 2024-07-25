@@ -41,8 +41,14 @@ def submit_application(request, char_id):
     if eve_char_application.member_state == Applications.MembershipStates.REJECTED:
         return "This character has been rejected previously and is still under cooldown for another application. Please contact WHC Community Coordinators on Discord"
 
-    # Queue up a forced memberaudit update
-    force_update_memberaudit(eve_char_application.eve_character)
+    main_eve_char = eve_char_application.get_main_character()
+    if main_eve_char is None:
+        return "This character has no Auth profile, which should not be possible. Please contact @webservices on discord."
+    main_char_application = main_eve_char.applications
+
+    # If this is a new main application, queue up a forced memberaudit update
+    if eve_char_application == main_char_application:
+        force_update_memberaudit(eve_char_application.eve_character)
 
     eve_char_application.member_state = Applications.MembershipStates.APPLIED
     eve_char_application.save()
