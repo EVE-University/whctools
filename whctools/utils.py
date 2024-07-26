@@ -15,12 +15,25 @@ from memberaudit.tasks import update_character as ma_update_character
 #)
 
 from whctools import __title__
+from whctools.app_settings import ALLOWED_ALLIANCES
 from whctools.models import Acl, ACLHistory, ApplicationHistory, Applications
 
 from .aa3compat import get_all_related_characters_from_character
 from .app_settings import TRANSIENT_REJECT
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+
+def is_character_in_allowed_corp(eve_character):
+    return (eve_character.alliance_id in ALLOWED_ALLIANCES)
+
+def get_corp_requirements_message():
+    """
+    Returns a human-readable string describing the corp criteria for an alt character.
+    """
+    # Since we can have arbitrarily complex conditions, it's useful to have a programmatically-defined descriptor.
+    # FIXME: sync with app_settings
+    return "Character must be in either the Ivy League or Ivy League Alt Alliance."
 
 
 def remove_character_from_community(app, new_state, reason, reject_time):
