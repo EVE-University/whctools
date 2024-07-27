@@ -6,13 +6,34 @@ from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
+from memberaudit.models import Character as MACharacter
+from memberaudit.tasks import update_character as ma_update_character
+# For MA 3.x, we have more granularity.
+#  update_character_skills as ma_update_character_skills,
+#  update_character_details as ma_update_character_details,
+#  update_character_corporation_history as ma_update_character_corporation_history,
+#)
+
 from whctools import __title__
+from whctools.app_settings import ALLOWED_ALLIANCES
 from whctools.models import Acl, ACLHistory, ApplicationHistory, Applications
 
 from .aa3compat import get_all_related_characters_from_character
 from .app_settings import TRANSIENT_REJECT
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+
+def is_character_in_allowed_corp(eve_character):
+    return (eve_character.alliance_id in ALLOWED_ALLIANCES)
+
+def get_corp_requirements_message():
+    """
+    Returns a human-readable string describing the corp criteria for an alt character.
+    """
+    # Since we can have arbitrarily complex conditions, it's useful to have a programmatically-defined descriptor.
+    # FIXME: sync with app_settings
+    return "Character must be in either the Ivy League or Ivy League Alt Alliance."
 
 
 def remove_character_from_community(app, new_state, reason, reject_time):
@@ -193,3 +214,28 @@ def generate_raw_copy_for_acl(acl_characters: dict):
         output.append("----")
 
     return "\n".join(output)
+
+def force_update_memberaudit(eve_character):
+    logger.debug(f"Forcing memberaudit update for character {eve_character}")
+    try:
+        ma_char = MACharacter.objects.get(eve_character=eve_character)
+    except ObjectDoesNotExist:
+        ma_char = None
+    if ma_char is not None:
+        ma_char.reset_update_section("skills")
+        ma_char.reset_update_section("character_details")
+        ma_char.reset_update_section("corporation_history")
+        # For MA 3.x, there's more granularity in what to trigger
+        #for ma_update in (ma_update_character_skills,
+        #                  ma_update_character_details,
+        #                  ma_update_character_corporation_details):
+        #    ma_update.apply_async(
+        ma_update_character.apply_async(
+            kwargs={"character_pk": ma_char.pk, "force_update": True},
+            priority=3, # 0-255, 0 highest priority (MA uses 3/5/7)
+        )
+    else:
+        messages.warning(
+            request,
+            f"{eve_character.character_name} is not registered with Member Audit."
+        )

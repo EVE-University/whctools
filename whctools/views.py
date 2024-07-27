@@ -40,7 +40,6 @@ except Exception:
 
 from whctools import __title__
 from whctools.app_settings import (
-    ALLOWED_ALLIANCES,
     LARGE_REJECT,
     MEDIUM_REJECT,
     SHORT_REJECT,
@@ -51,6 +50,8 @@ from whctools.models import Acl, ACLHistory, AclHistoryRequest, Applications
 from .utils import (
     add_character_to_acl,
     generate_raw_copy_for_acl,
+    get_corp_requirements_message,
+    is_character_in_allowed_corp,
     log_application_change,
     remove_all_alts,
     remove_character_from_acl,
@@ -119,9 +120,10 @@ def index(request):
                 }
             )
         else:
-            is_in_approved_uni_alliance = eve_char.alliance_id in ALLOWED_ALLIANCES
+            is_in_approved_corp = is_character_in_allowed_corp(eve_char)
+            corp_requirements_message = get_corp_requirements_message()
             logger.debug(
-                f"Character {eve_char.character_name} is in approved alliances: {is_in_approved_uni_alliance}"
+                f"Character {eve_char.character_name} is in approved corp: {is_in_approved_corp}"
             )
             reject_timeout = application.reject_timeout - now
             timedout = reject_timeout.total_seconds() < 0
@@ -137,13 +139,15 @@ def index(request):
                 {
                     "application": application,
                     "char_name": eve_char.character_name,
+                    "corporation_name": eve_char.corporation_name,
+                    "alliance_name": eve_char.alliance_name,
                     "char_id": eve_char.character_id,
                     "portrait_url": eve_char.portrait_url(64),
                     "character": macharacter,
                     "is_shared": macharacter.is_shared,
                     "is_main": main_character_id == eve_char.character_id,
                     "is_main_member": is_main_accepted,
-                    "is_in_approved_alliance": is_in_approved_uni_alliance,
+                    "is_in_approved_corp": is_in_approved_corp,
                 }
             )
 
@@ -152,6 +156,7 @@ def index(request):
         "auth_characters": auth_characters,
         "unregistered_chars": unregistered_chars,
         "main_character_id": main_character_id,
+        "corp_requirements_message": corp_requirements_message,
     }
 
     return render(request, "whctools/index.html", context)
