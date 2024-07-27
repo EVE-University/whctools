@@ -42,7 +42,7 @@
                             {% for member in members %}
                             <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
                                 {% with member.alts|length as alts_length %}
-                                    <td>{% if alts_length > 0 %}<i class="alt-caret fa-solid fa-caret-right"></i>{% endif %}</td>
+                                    <td>{% if alts_length > 0 %}<i class="alt-caret fas fa-solid fa-caret-right"></i>{% endif %}</td>
                                 {% endwith %}
                                 <td><img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"></td>
                                 <td>{{member.main.name}}</td>
@@ -151,12 +151,12 @@
                 var altRows = document.querySelectorAll('.whctools-alt-row[data-parent-id="' + memberId + '"]');
                 if( altRows.length>0 ) {
                     if( showAlts ) {
-                        row.removeAttribute('alts-visible');
+                        row.removeAttribute('show-alts');
                         caretIcon.classList.add('fa-caret-right');
                         caretIcon.classList.remove('fa-caret-down');
                         altRows.forEach(function(altRow) { altRow.style.display = 'none'; });
                     } else {
-                        row.setAttribute('alts-visible', true);
+                        row.setAttribute('show-alts', true);
                         caretIcon.classList.remove('fa-caret-right');
                         caretIcon.classList.add('fa-caret-down');
                         altRows.forEach(function(altRow) { altRow.style.display = 'table-row'; });
