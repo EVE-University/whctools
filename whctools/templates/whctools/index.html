@@ -23,44 +23,51 @@
                                     <img src="{{ auth_char.portrait_url }}" class="media-object {% if not auth_char.is_shared%}whctools-image-disabled-class{% endif %}">
                                     </div>
                                     <div class="media-body">
-                                    <h4 class="media-heading">{{auth_char.char_name}}</h4>
-                                    {% if not auth_char.is_in_approved_alliance%}
-                                        <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
-                                            Character is not in IVY or IVY-A, and cannot apply.
-                                            {% comment %} TODO @@@ - remove hardcoded names here {% endcomment %}
-                                        </p>
+                                    <h4 class="media-heading" style="margin-top:5px; margin-bottom: 0px">{{auth_char.char_name}}</h4>
+                                        <span style="font-size: 80%;"> Corp: <i><b> {{ auth_char.corporation_name }}</b></i></span>
+                                        <span style="display:inline-block; min-width:5px"> </span>
+                                        <span style="font-size: 80%;"> Alliance: <i><b> {{ auth_char.alliance_name }}</b></i></span>
+                                        {% if auth_char.application.member_state == auth_char.application.MembershipStates.ACCEPTED%}
+                                        <span style="display:inline-block; min-width:5px"> </span>
+                                        <span class="whctools-good" style="font-size: 80%;"><i class="fa fas fa-circle-check"></i> WHC Member</span>
+                                        {% endif %}
+                                        <br>
+                                    {% if not auth_char.is_in_approved_corp %}
+                                        <span class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
+                                        {{ corp_requirements_message }}
+                                        </span>
                                     {% elif auth_char.is_shared %}
-                                    {% comment %} <p>{{ auth_char.rejected_reason }}</p>
-                                    <p>{{ auth_char.rejected_timeout }}</p> {% endcomment %}
                                         {% if auth_char.is_main or auth_char.is_main_member %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.NOTAMEMBER%}
                                                 {% if auth_char.is_main %}
-                                                <p class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i> Please check you have the required skills before applying or the application will be rejected and subject to a timeout!</p>
+                                                <div class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i>Please check you have the required skills or you will be rejected and subject to a timeout before you can reapply.</div>
                                                 {% endif %}
                                                 <a href="/whctools/apply/{{auth_char.char_id}}" class="whcbutton btn btn-primary" role="button">Apply</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.APPLIED%}
-                                                <p class="whctools-good">You have applied and are awaiting approval!</p>
-                                                <p class="whctools-good">If you choose to withdraw the application you will be subject to a short timeout before you can reapply.</p>
+                                                <div class="whctools-good">Your application is awaiting approval.
+                                                If you choose to withdraw it, you will be subject to a short timeout before you can reapply.</div>
                                                 <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Withdraw</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.REJECTED%}
-                                                <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>You are currently under a timeout for: {{ auth_char.application.get_reject_reason_display }}</p>
-                                                <p class="whctools-error">You will be able to apply again in: {{auth_char.application.reject_timeout|timeuntil}}</p>
+                                                <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>You are currently under a timeout for: <b>{{ auth_char.application.get_reject_reason_display }}</b></div>
+                                                <div class="whctools-error">You will be able to apply again in: {{auth_char.application.reject_timeout|timeuntil}}</div>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.ACCEPTED%}
+
                                             <p class="whctools-good">You are a member!</p>
                                             <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-danger" role="button">Leave</a>
+
                                             {% endif %}
                                         {% else %}
-                                        <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
-                                            Main character has not applied yet - please apply on Main first!
-                                        </p>
+                                        <div class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
+                                            Your Main character has not been accepted. Please apply on Main first.
+                                        </div>
                                         {% endif %}
                                     {% else %}
-                                    <p class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
-                                        This character has not been shared in Member Audit!
-                                    </p>
+                                    <div class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
+                                        This character has not been shared in Member Audit.
+                                    </div>
                                     {% endif %}
                                     </div>
                                 </div>
@@ -74,9 +81,9 @@
                                     </div>
                                     <div class="media-body">
                                     <h4 class="media-heading">{{unreg_char.char_name}}</h4>
-                                    <p class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>
-                                        This character has not been added to Member Audit!
-                                    </p>
+                                    <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i>
+                                        This character has not been added to Member Audit.
+                                    </div>
                                     </div>
                                 </div>
                         {% endfor %}
