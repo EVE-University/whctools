@@ -121,7 +121,6 @@ def index(request):
             )
         else:
             is_in_approved_corp = is_character_in_allowed_corp(eve_char)
-            corp_requirements_message = get_corp_requirements_message()
             logger.debug(
                 f"Character {eve_char.character_name} is in approved corp: {is_in_approved_corp}"
             )
@@ -156,7 +155,7 @@ def index(request):
         "auth_characters": auth_characters,
         "unregistered_chars": unregistered_chars,
         "main_character_id": main_character_id,
-        "corp_requirements_message": corp_requirements_message,
+        "corp_requirements_message": get_corp_requirements_message(),
     }
 
     return render(request, "whctools/index.html", context)
