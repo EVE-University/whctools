@@ -21,6 +21,14 @@
                 <li class="pull-right">
                     <button id="copyAclListButton" class="btn btn-primary">Copy ACL List</button>
                 </li>
+                {% comment %}
+                <li class="pull-right">
+                    <a id="syncAclGroups" class="btn btn-primary"
+                            href="/whctools/staff/{{ acl_name }}/sync_groups_with_acl">
+                        Sync Auth groups with this ACL
+                    </a>
+                </li>
+                {% endcomment %}
               </ul>
             <div class="tab-content">
                 <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
