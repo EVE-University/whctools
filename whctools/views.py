@@ -3,7 +3,7 @@
 from memberaudit.models import Character
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
