@@ -5,6 +5,8 @@ from memberaudit.models import SkillSet
 from django import forms
 from django.db import models
 
+from django.contrib.auth.models import Group
+
 from allianceauth.eveonline.models import EveCharacter
 
 try:
@@ -112,8 +114,15 @@ class Acl(models.Model):
 
     name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
-    characters = models.ManyToManyField(EveCharacter)
+    characters = models.ManyToManyField(EveCharacter, blank=True)
     skill_sets = models.ManyToManyField(SkillSet)
+    # Each ACL can be associated with zero or more groups. When a WHC application is
+    # accepted to the ACL, the user is also added to all groups. When the user's
+    # last character is removed from the ACL, the user is removed from all groups.
+    #
+    # N.B.- Probably not a good idea to share these groups outside of whctools. It
+    # will fight for control and you'll probably end up with corrupted state.
+    groups = models.ManyToManyField(Group, blank=True)
 
     def __str__(self):
         return self.name

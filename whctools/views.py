@@ -3,7 +3,7 @@
 from memberaudit.models import Character
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -56,6 +56,7 @@ from .utils import (
     remove_all_alts,
     remove_character_from_acl,
     remove_character_from_community,
+    synchronize_groups_from_acl,
 )
 from .views_actions.player_actions import submit_application
 from .views_staff.open_applications import all_characters_currently_with_open_apps
@@ -178,12 +179,12 @@ def rejected_applications(request):
     return render(request, "whctools/staff/staff_rejected_apps.html", context)
 
 
-@login_required
-@permission_required("whctools.whc_officer")
-def list_acls(request):
-    context = build_default_staff_context("ACL Lists")
-    context["existing_acls"] = Acl.objects.all()
-    return render(request, "whctools/staff/staff_list_acls.html", context)
+#@login_required
+#@permission_required("whctools.whc_officer")
+#def list_acls(request):
+#    context = build_default_staff_context("ACL Lists")
+#    context["existing_acls"] = Acl.objects.all()
+#    return render(request, "whctools/staff/staff_list_acls.html", context)
 
 
 @login_required
@@ -494,3 +495,10 @@ def get_skills(request, char_id):
     skill_sets = getSkills(char_id)
 
     return JsonResponse(skill_sets)
+
+
+@login_required
+@permission_required("whctools.whc_officer")
+def sync_groups_with_acl(request, acl_pk="WHC"):
+    synchronize_groups_from_acl(acl_pk)
+    return redirect(f"/whctools/staff/action/{acl_pk}/view")
