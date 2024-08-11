@@ -19,6 +19,7 @@ from whctools.app_settings import ALLOWED_ALLIANCES
 from whctools.models import Acl, ACLHistory, ApplicationHistory, Applications
 
 from .aa3compat import get_all_related_characters_from_character
+from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
 from .app_settings import TRANSIENT_REJECT
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -88,9 +89,11 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
 
     acl_object = Acl.objects.filter(pk=acl_name)
     if acl_object:
+        user = None
         characters = acl_object[0].characters.all()
         for char in characters:
             if char.character_id == char_id:
+                user = get_user_from_evecharacter(char)
                 logger.debug(
                     f"Removing {char.character_name} form {acl_name} - setting to {Applications.MembershipStates(to_state).name} for {reason}"
                 )
@@ -106,8 +109,14 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
                 )
                 history_entry.save()
                 acl_object[0].changes.add(history_entry)
-                return
-
+        # Character has been removed, if it existed in the ACL.
+        # If this was the last character, also remove the user from all the
+        # ACL's associated groups.
+        characters = acl_object[0].characters.all()
+        if len(characters)==0 and user is not None:
+            for group in acl_object[0].groups.all():
+                user.groups.remove(group)
+          
 
 def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
     logger.debug(
@@ -127,7 +136,10 @@ def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
         )
         history_entry.save()
         acl_obj.changes.add(history_entry)
-
+        user = get_user_from_evecharacter(eve_character)
+        for group in acl_obj.groups.all():
+            user.groups.add(group)
+        
 
 def log_application_change(
     application: Applications,
@@ -175,6 +187,28 @@ def update_all_acls_for_character_leaving_alliance(
             "WHC Community Status",
             f"Your status with {acl.name} on {character.character_name} has been removed\n:Reason: Character is no longer part of IVY or IVY-A",
         )
+
+
+def synchronize_groups_from_acl(acl_name):
+    acl_result = Acl.objects.filter(pk=acl_name)
+    if not acl_result:
+        logger.error(f"Attempted to synchronize groups from nonexistent ACL '{acl_name}'")
+        return
+    acl = acl_result[0]
+    # Add characters in the ACL that should be in groups
+    all_authorized_users = set([])
+    for char in acl.characters.all():
+        user = get_user_from_evecharacter(char)
+        all_authorized_users.add(user)
+        for group in acl.groups.all():
+            user.groups.add(group)
+    # Remove characters not in the ACL that shouldn't be in groups
+    #import pdb; pdb.set_trace()
+    for group in acl.groups.all():
+        group_users = group.user_set.all()
+        invalid_users = set(group_users) - all_authorized_users
+        for user in invalid_users:
+            user.groups.remove(group)
 
 
 def remove_in_process_application(user, application_details):
