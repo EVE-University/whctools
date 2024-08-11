@@ -104,6 +104,8 @@ class ApplicationHistory(models.Model):
         verbose_name_plural = "Application Log"
 
     def __str__(self) -> str:
+        if self.application is None:
+            return f"(Invalid application action)"
         return f"{self.application.eve_character.character_name} - {self.get_old_state_display()} to {self.get_new_state_display()}"
 
 
