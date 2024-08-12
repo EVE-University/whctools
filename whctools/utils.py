@@ -7,9 +7,9 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from memberaudit.models import Character as MACharacter
-from memberaudit.tasks import update_character as ma_update_character
+#from memberaudit.tasks import update_character as ma_update_character
 # For MA 3.x, we have more granularity.
-#  update_character_skills as ma_update_character_skills,
+from memberaudit.tasks import update_character_skills as ma_update_character_skills
 #  update_character_details as ma_update_character_details,
 #  update_character_corporation_history as ma_update_character_corporation_history,
 #)
@@ -257,17 +257,9 @@ def force_update_memberaudit(eve_character):
         ma_char = None
     if ma_char is not None:
         ma_char.reset_update_section("skills")
-        ma_char.reset_update_section("character_details")
-        ma_char.reset_update_section("corporation_history")
-        # For MA 3.x, there's more granularity in what to trigger
-        #for ma_update in (ma_update_character_skills,
-        #                  ma_update_character_details,
-        #                  ma_update_character_corporation_details):
-        #    ma_update.apply_async(
-        ma_update_character.apply_async(
+        ma_update_character_skills.apply_async(
             kwargs={"character_pk": ma_char.pk, "force_update": True},
-            priority=3, # 0-255, 0 highest priority (MA uses 3/5/7)
-        )
+            priority=3)
     else:
         messages.warning(
             request,
