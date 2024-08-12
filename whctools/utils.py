@@ -10,20 +10,26 @@ from memberaudit.models import Character as MACharacter
 #from memberaudit.tasks import update_character as ma_update_character
 # For MA 3.x, we have more granularity.
 from memberaudit.tasks import update_character_skills as ma_update_character_skills
-#  update_character_details as ma_update_character_details,
-#  update_character_corporation_history as ma_update_character_corporation_history,
-#)
 
 from whctools import __title__
 from whctools.app_settings import ALLOWED_ALLIANCES
 from whctools.models import Acl, ACLHistory, ApplicationHistory, Applications
 
 from .aa3compat import get_all_related_characters_from_character
-from allianceauth.framework.api.evecharacter import get_user_from_evecharacter
+from allianceauth.framework.api.evecharacter import (
+    get_user_from_evecharacter,
+    get_main_character_from_evecharacter,
+)
 from .app_settings import TRANSIENT_REJECT
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
+
+def is_main_eve_character(eve_character):
+    main_character = get_main_character_from_evecharacter(eve_character)
+    if (main_character is not None) and (main_character == eve_character):
+        return True
+    return False
 
 def is_character_in_allowed_corp(eve_character):
     return (eve_character.alliance_id in ALLOWED_ALLIANCES)
@@ -265,3 +271,21 @@ def force_update_memberaudit(eve_character):
             request,
             f"{eve_character.character_name} is not registered with Member Audit."
         )
+
+def get_last_ma_update_time(eve_character):
+    '''Return a datetime for when memberaudit was last successfully updated with skill data'''
+
+    logger.info(f"get_last_ma_update_time")
+    try:
+        ma_char = eve_character.memberaudit_character
+        # Also check it wasn't an error last time
+        is_status_okay = ma_char.is_update_status_ok()
+        last_ma_update = ma_char.update_status_set.get(
+            section=MACharacter.UpdateSection.SKILLS
+        ).update_finished_at
+        if is_status_okay:
+            return last_ma_update
+    except Exception as e:
+        pass
+    # If something goes wrong, return an unreasonably old datetime.
+    return datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)
