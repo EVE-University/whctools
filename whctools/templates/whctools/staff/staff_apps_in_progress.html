@@ -23,7 +23,11 @@
             </td>
             <td>{{ char.application.last_updated|timesince }}</td>
             <td>
+                {% if char.is_main_char and not char.ma_is_valid %}
+                <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i> Failed to fetch skills from Member Audit.<br>Refresh page or ask player to re-register if it persists.</div>
+                {% else %}
                 <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character_id }}">Check Skills</button>
+                {% endif %}
             </td>
             <td>
                 <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.id }}">

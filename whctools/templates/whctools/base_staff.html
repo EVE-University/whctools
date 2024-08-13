@@ -59,25 +59,28 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(data) {
                 console.log('Received data:', data); // Log the received data
 
-                if (data.skill_sets) {
+                if (data.alt_data) {
                     // Build the popup content with the data
                     var content = '<h3>Skill Set Checks for <u>' + data.applying_character + '</u> related characters</h3>';
-                    content += '<table class="table"><tr class="whctools-tr"><th>Character Name</th>';
+                    content += '<table class="table"><tr class="whctools-tr"><th>Character Name</th><th>Skills Updated</th>';
 
                     // Get the keys from the first skill set to create the table headers
-                    var firstKey = Object.keys(data.skill_sets)[0];
-                    if (firstKey) {
-                        var skillKeys = Object.keys(data.skill_sets[firstKey]);
-                        skillKeys.forEach(function(skill) {
-                            content += '<th>' + skill + '</th>';
+                    var firstAlt = Object.keys(data.alt_data)[0]
+                    if (firstAlt) {
+                        var skillKeys = Object.keys(data.alt_data[firstAlt][1]);
+                        skillKeys.forEach(function(skillset) {
+                            content += '<th>' + skillset + '</th>';
                         });
                     }
 
                     content += '</tr>';
-                    $.each(data.skill_sets, function(alt_name, skill_sets) {
+                    $.each(data.alt_data, function(alt_name, alt_data) {
+                        last_update = alt_data[0]
+                        skill_sets = alt_data[1]
                         content += '<tr><td>' + alt_name + '</td>';
-                        $.each(skill_sets, function(skill_name, skill_check) {
-                            content += '<td style="text-align: center;"><i class="' + (skill_check ? 'fas fa-check' : 'fas fa-times') + '" style="color: ' + (skill_check ? 'green' : 'red') + ';"></i></td>';
+                        content += '<td>' + last_update + '</td>';
+                        $.each(skill_sets, function(skillset__name, skillset_check) {
+                            content += '<td style="text-align: center;"><i class="' + (skillset_check ? 'fas fa-check' : 'fas fa-times') + '" style="color: ' + (skillset_check ? 'green' : 'red') + ';"></i></td>';
                         });
                         content += '</tr>';
                     });
