@@ -47,6 +47,17 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for orphan in orphans %}
+                            <tr class="whctools-main-row whctools-error-row" data-member-id="">
+                                <td></td>
+                                <td><img src="{{ orphan.portrait_url }}" alt="{{ orphan.character_name }}"></td>
+                                <td>{{orphan.character_name}}</td>
+                                <td><b>No main found</b></td>
+                                <td>{{orphan.corporation_name}}</td>
+                                <td>{{orphan.alliance_name}}</td>
+                                <td><a href="/whctools/staff/action/{{orphan.character_id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Character</a></td>
+                            </tr>
+                            {% endfor %}
                             {% for member in members %}
                             <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
                                 {% with member.alts|length as alts_length %}
