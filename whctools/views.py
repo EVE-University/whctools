@@ -8,6 +8,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from allianceauth.eveonline.models import EveCharacter
+from allianceauth.framework.api.user import get_sentinel_user
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
@@ -403,8 +404,14 @@ def list_acl_members(request, acl_pk=""):
             parsed_acl_history = list(parsed_acl_history.values())
 
     mains_and_alts = {}
+    orphaned_members = []
+    sentinel_user = get_sentinel_user()
     for memb in members_on_acl:
         user_obj = get_user_from_evecharacter(memb)
+        if user_obj == sentinel_user:
+            orphaned_members.append(memb)
+            logger.info(f"WHC ACL '{acl_pk}' has orphaned member '{memb}'")
+            continue
 
         mains_and_alts.setdefault(user_obj.id, {})
         if "main" not in mains_and_alts[user_obj.id].keys():
@@ -413,12 +420,16 @@ def list_acl_members(request, acl_pk=""):
             )
 
         if mains_and_alts[user_obj.id]["main"] is None:
-            "string"["error"]
+            logger.error(f"Unable to retrieve main character for '{str(memb)}' of user '{str(user_obj)}'")
+            orphaned_members.append(memb)
+            continue
 
         mains_and_alts[user_obj.id].setdefault("alts", []).append(memb)
         mains_and_alts[user_obj.id].setdefault(
             "complete_alts", get_all_characters_from_user(user_obj)
         )
+
+    alphabetical_orphans = sorted(orphaned_members, key=lambda x: x.character_name)
 
     # note to self - x[1] is not a list index, but a tuple index, becaus its .items(), returning (key, value)
     # and it has to be for it to remain a dict after sorting
@@ -472,6 +483,7 @@ def list_acl_members(request, acl_pk=""):
 
     context = {
         "members": alphabetical_mains.values(),
+        "orphans": alphabetical_orphans,
         "acl_name": acl_pk,
         "date_selected": date_selected,
         "acl_changes": parsed_acl_history,
