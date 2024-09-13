@@ -16,16 +16,34 @@
 
 {% block extra_css %}
 <style>
-    .whctools > tbody > tr {
+    .whctools-table > tbody > tr {
         border-top: solid 1px #797777;
     }
 
-    .whctools > :is(thead,tbody) > tr > :is(th,td) {
+    .whctools-table > thead > tr {
+        background-color: rgb(64,69,75);
+    }
+
+    .whctools-table > :is(thead,tbody) > tr > :is(th,td) {
         vertical-align:middle !important;
     }
 
-    .whctools-staff > :is(thead,tbody) > tr > :is(th,td) {
+    .whctools-table-staff > :is(thead,tbody) > tr > :is(th,td) {
         padding: 3px 8px 3px 8px;
+    }
+
+    .whctools-alt-row {
+        display: none;
+    }
+    /*.whctools-main-row:hover {
+        background-color: rgb(64,69,75);
+    }*/
+
+    .whctools-error-row {
+        background-color: rgb(213, 67, 62);
+    }
+    .whctools-error-row:hover {
+        background-color: rgb(217, 83, 79);
     }
 
     .media {
@@ -47,17 +65,25 @@
         background: #375a7f;
     }
 
-    .whcpanel {
-        border-top-left-radius: 0px
-    }
-
     img {
         max-width: none;
         margin: 5px
     }
 
+    .panel {
+        margin-bottom: 10px; /* down from 20px */
+    }
+
+    .whcpanel {
+        border-top-left-radius: 0px
+    }
+
     .whctools-warning {
         color: #e89052;
+    }
+    .panel-warning {
+        border-color: #e89052;
+        background-color: rgb(64,69,75);
     }
 
     .whctools-error {
@@ -127,20 +153,6 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 999;
-    }
-
-    .whctools-alt-row {
-        display: none;
-    }
-    /*.whctools-main-row:hover {
-        background-color: rgb(64,69,75);
-    }*/
-
-    .whctools-error-row {
-        background-color: rgb(213, 67, 62);
-    }
-    .whctools-error-row:hover {
-        background-color: rgb(217, 83, 79);
     }
 
     /* The modal (background) */

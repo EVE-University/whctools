@@ -15,27 +15,26 @@
         <div class="panel-body" style="min-height: 100px;">
 
             {% comment %} @@@ Probably would be better to move this into individual files {% endcomment %}
-            <ul class="nav nav-pills">
-                <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#all_members">All Members</a></li>
-                <li {% if date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#after_date">Filter After</a></li>
-                <li class="pull-right">
-                    <button id="copyAclListButton" class="btn btn-primary">Copy ACL List</button>
-                </li>
-                {% comment %}
-                <li class="pull-right">
-                    <a id="syncAclGroups" class="btn btn-primary"
-                            href="/whctools/staff/{{ acl_name }}/sync_groups_with_acl">
-                        Sync Auth groups with this ACL
-                    </a>
-                </li>
-                {% endcomment %}
+            <ul class="nav nav-tabs">
+                <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="tab" href="#all_members">All Members</a></li>
+                <li {% if date_selected %} class="active" {% endif %}><a data-toggle="tab" href="#after_date">Audit Log</a></li>
               </ul>
             <div class="tab-content">
                 <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
                     <div class="panel-body">
-                        <p>{{ total_chars }} total characters ({{ total_mains }} mains)</p>
+                            <div class="pull-left">
+                                {{ total_chars }} total characters ({{ total_mains }} mains)
+                            </div>
+                            <div class="pull-right">
+                                <button id="copyAclListButton" class="btn btn-primary whcbutton">Copy ACL as text</button>
+                                {% comment %}
+                                <a id="syncAclGroups" class="btn btn-primary whcbutton" href="/whctools/staff/{{ acl_name }}/sync_groups_with_acl">
+                                    Sync Auth groups with this ACL
+                                </a>
+                                {% endcomment %}
+                            </div>
                     </div>
-                    <table class="table table-hover whctools whctools-staff">
+                    <table class="table table-hover whctools-table whctools-table-staff">
                         <thead>
                             <tr>
                                 <th>{% comment %}Alt indicator column{% endcomment %}</th>
