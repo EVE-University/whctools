@@ -158,6 +158,7 @@ def index(request):
         "unregistered_chars": unregistered_chars,
         "main_character_id": main_character_id,
         "corp_requirements_message": get_corp_requirements_message(),
+        "withdraw_timeout": TRANSIENT_REJECT,
     }
 
     return render(request, "whctools/index.html", context)

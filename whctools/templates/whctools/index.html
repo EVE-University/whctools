@@ -46,7 +46,7 @@
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.APPLIED%}
                                                 <div class="whctools-good">Your application is awaiting approval.
-                                                If you choose to withdraw it, you will be subject to a short timeout before you can reapply.</div>
+                                                If you choose to withdraw it, you will be subject to a {{ withdraw_timeout }} day timeout before you can reapply.</div>
                                                 <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Withdraw</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.REJECTED%}
