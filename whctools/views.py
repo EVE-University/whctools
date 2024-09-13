@@ -357,7 +357,6 @@ def reset(request, char_id, acl_name="WHC"):
 @login_required
 @permission_required("whctools.whc_officer")
 def list_acl_members(request, acl_pk=""):
-
     acl_obj = Acl.objects.get(pk=acl_pk)
     if not acl_obj:
         return redirect("/whctools")
@@ -481,7 +480,13 @@ def list_acl_members(request, acl_pk=""):
             )
         )
 
+    # Pre-compute aggregates
+    total_mains = len(alphabetical_mains)
+    total_chars = acl_obj.characters.count()
+
     context = {
+        "total_mains": total_mains,
+        "total_chars": total_chars,
         "members": alphabetical_mains.values(),
         "orphans": alphabetical_orphans,
         "acl_name": acl_pk,

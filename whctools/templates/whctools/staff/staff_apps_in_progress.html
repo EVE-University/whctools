@@ -2,45 +2,45 @@
 
 {% block staff_page %}
 <div id="applications" class="panel panel-default tab-pane active">
-    <table class="table">
-        <tr>
-            <th>Portrait</th>
-            <th>Character</th>
-            <th>Main</th>
-            <th>App Age</th>
-            <th>Skills Check</th>
-            <th>Action</th>
-        </tr>
-        {% for char in applied_chars %}
-        <tr class="whctools-tr">
-            <td>
-                <img src="{{ char.application.eve_character.portrait_url }}">
+    <table class="table table-hover whctools whctools-staff">
+        <thead>
+            <tr>
+                <th>Character</th>
+                <th>Main</th>
+                <th>App Age</th>
+                <th>Skills Check</th>
+                <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for char in applied_chars %}
+            <tr>
+                <td>{{ char.application.eve_character.character_name }}
+                <br><span style="font-size: 80%;"> A: <i><b> {{ char.application.eve_character.alliance_name }}</b></i></span>
             </td>
-            <td>{{ char.application.eve_character.character_name }}
-            <br><span style="font-size: 80%;"> A: <i><b> {{ char.application.eve_character.alliance_name }}</b></i></span>
-        </td>
-            <td><i>{{ char.application.get_main_character.character_name }}</i>
-            </td>
-            <td>{{ char.application.last_updated|timesince }}</td>
-            <td>
-                {% if char.is_main_char and not char.ma_is_valid %}
-                <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i> Failed to fetch skills from Member Audit.<br>Refresh page or ask player to re-register if it persists.</div>
-                {% else %}
-                <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character_id }}">Check Skills</button>
-                {% endif %}
-            </td>
-            <td>
-                <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.id }}">
-                    {% for acl in existing_acls %}
-                        <option value="{{ acl.name }}">{{ acl.name }}</option>
-                    {% endfor %}
-                </select>
-                <button class="whcbutton btn btn-primary accept-button" role="button">Accept</button>
-                <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/skills/{{ reject_timers.short_reject }}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
-                <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/other/{{ reject_timers.medium_reject }}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
-            </td>
-        </tr>
-        {% endfor %}
+                <td><i>{{ char.application.get_main_character.character_name }}</i>
+                </td>
+                <td>{{ char.application.last_updated|timesince }}</td>
+                <td>
+                    {% if char.is_main_char and not char.ma_is_valid %}
+                    <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i> Failed to fetch skills from Member Audit.<br>Refresh page or ask player to re-register if it persists.</div>
+                    {% else %}
+                    <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character_id }}">Check Skills</button>
+                    {% endif %}
+                </td>
+                <td>
+                    <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.id }}">
+                        {% for acl in existing_acls %}
+                            <option value="{{ acl.name }}">{{ acl.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="whcbutton btn btn-primary accept-button" role="button">Accept</button>
+                    <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/skills/{{ reject_timers.short_reject }}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
+                    <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/other/{{ reject_timers.medium_reject }}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 </div>
 

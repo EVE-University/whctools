@@ -16,13 +16,16 @@
 
 {% block extra_css %}
 <style>
-
-    .whctools-tr {
+    .whctools > tbody > tr {
         border-top: solid 1px #797777;
     }
 
-    .whctools-tr > td {
+    .whctools > :is(thead,tbody) > tr > :is(th,td) {
         vertical-align:middle !important;
+    }
+
+    .whctools-staff > :is(thead,tbody) > tr > :is(th,td) {
+        padding: 3px 8px 3px 8px;
     }
 
     .media {
@@ -37,7 +40,6 @@
         padding-bottom: 2px;
         padding-left: 10px;
         padding-right: 10px;
-        margin-bottom: 5px;
     }
 
     .nav-tabs > li > a:hover {
@@ -127,16 +129,12 @@
         z-index: 999;
     }
 
-
-    .whctools-main-row {
-        cursor: pointer;
-    }
     .whctools-alt-row {
         display: none;
     }
-    .whctools-main-row:hover {
+    /*.whctools-main-row:hover {
         background-color: rgb(64,69,75);
-    }
+    }*/
 
     .whctools-error-row {
         background-color: rgb(213, 67, 62);
