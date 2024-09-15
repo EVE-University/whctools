@@ -1,5 +1,7 @@
 """Views."""
 
+from datetime import timedelta
+
 from memberaudit.models import Character
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -363,46 +365,42 @@ def list_acl_members(request, acl_pk=""):
         return redirect("/whctools")
     members_on_acl = acl_obj.characters.all()
     date_selected = None
-    parsed_acl_history = []
 
+    # Audit Log
+    acl_history_request = AclHistoryRequest(initial={"date_of_change": timezone.now() - timedelta(days=7), "limit": 0})
+    acl_changes = []
+    num_acl_changes = 0
     if request.method == "POST":
         logger.debug("POST request for acl history")
         form = AclHistoryRequest(request.POST)
+        logger.debug(form)
         if form.is_valid():
+            acl_history_request = form # Preserve previous query
 
             date_selected = form.cleaned_data.get("date_of_change")
             acl_history_entries = ACLHistory.objects.filter(
                 date_of_change__gte=date_selected
-            )
-            logger.debug(f"Pulling ACL history after {date_selected} for {acl_pk}")
-            parsed_acl_history = {}
-            last_known_change = None
+            ).order_by("date_of_change")
+            character_name = form.cleaned_data.get("character_name")
+            if character_name != "":
+                acl_history_entries = acl_history_entries.filter(character__character_name=character_name)
+            limit = form.cleaned_data.get("limit")
+            if limit!=0:
+                acl_history_entries = acl_history_entries[:limit]
+            logger.debug(f"Pulling {'all' if limit==0 else str(limit)} ACL history entries after {date_selected} for {acl_pk}")
             for entry in acl_history_entries:
-                if (
-                    last_known_change is None
-                    or entry.date_of_change > last_known_change
-                ):
-                    new_state = Applications.MembershipStates(entry.new_state)
-                    if new_state in [
-                        Applications.MembershipStates.NOTAMEMBER,
-                        Applications.MembershipStates.APPLIED,
-                        Applications.MembershipStates.REJECTED,
-                    ]:
-                        action = "Remove"
-                    else:
-                        action = "Add"
-                    last_known_change = entry.date_of_change
-                    parsed_acl_history[entry.character.character_name] = {
-                        "date": entry.date_of_change,
-                        "portrait_url": entry.character.portrait_url(32),
-                        "name": entry.character.character_name,
-                        "state": new_state.name,
-                        "action": action,
-                        "reason": entry.get_reason_for_change_display(),
-                    }
+                acl_changes.append({
+                    "member": entry.character.character_name,
+                    "date": entry.date_of_change,
+                    "name": entry.character.character_name,
+                    "old_state": Applications.MembershipStates(entry.old_state).name,
+                    "new_state": Applications.MembershipStates(entry.new_state).name,
+                    "reason": entry.get_reason_for_change_display(),
+                })
+            acl_changes = sorted(acl_changes, key=lambda _: _["date"])
+            num_acl_changes = len(acl_changes)
 
-            parsed_acl_history = list(parsed_acl_history.values())
-
+    # ACL
     mains_and_alts = {}
     orphaned_members = []
     sentinel_user = get_sentinel_user()
@@ -492,9 +490,10 @@ def list_acl_members(request, acl_pk=""):
         "orphans": alphabetical_orphans,
         "acl_name": acl_pk,
         "date_selected": date_selected,
-        "acl_changes": parsed_acl_history,
+        "acl_changes": acl_changes,
+        "num_acl_changes": num_acl_changes,
         "raw_acl_copy_text": generate_raw_copy_for_acl(alphabetical_mains),
-        "acl_history_request": AclHistoryRequest(),
+        "acl_history_request": acl_history_request,
         "reject_timers": {
             "large_reject": LARGE_REJECT,
             "medium_reject": MEDIUM_REJECT,

@@ -20,6 +20,7 @@
                 <li {% if date_selected %} class="active" {% endif %}><a data-toggle="tab" href="#after_date">Audit Log</a></li>
               </ul>
             <div class="tab-content">
+                {% comment %} ----- ACL Content pane ----- {% endcomment %}
                 <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
                     <div class="panel-body">
                             <div class="pull-left">
@@ -93,40 +94,69 @@
                         </tbody>
                     </table>
                 </div>
+                {% comment %} ----- Audit Log pane ----- {% endcomment %}
                 <div id="after_date" class="panel panel-default tab-pane {% if date_selected %} active {% endif %}">
-                    <form method="post" class="form-inline">
-                        {% csrf_token %}
-                        <div class="form-group mb-2">
-                            <label for="{{ acl_history_request.date_of_change.id_for_label }}">Made On</label>
-                            {{ acl_history_request.date_of_change }}
-                            {% if acl_history_request.date_of_change.errors %}
-                                <div class="text-danger">
-                                    {{ acl_history_request.date_of_change.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <button type="submit" class="btn btn-primary mb-2">Get History</button>
-                    </form>
+                    <div class="panel-body">
+                        <form method="post" class="form-inline">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ acl_history_request.date_of_change.id_for_label }}">After: </label>
+                                {{ acl_history_request.date_of_change }}
+                                {% if acl_history_request.date_of_change.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.date_of_change.errors }}
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <label for="{{ acl_history_request.limit.if_for_label }}">Limit to: </label>
+                                {{ acl_history_request.limit }}
+                                (zero for all entries)
+                                {% if acl_history_request.limit.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.limit.errors }}
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <label for="{{ acl_history_request.character_name.id_for_label }}">For character: </label>
+                                {{ acl_history_request.character_name }}
+                                (leave blank for all characters)
+                                {% if acl_history_request.character_name.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.character_name.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <br>
+                            <button type="submit" class="btn btn-primary mb-2">Get History</button>
+                        </form>
+                    </div>
                 {% if date_selected %}
-                    <table class="table">
-                        <tr>
-                            <th>Time Last Changed</th>
-                            <th>Name</th>
-                            <th>Last State</th>
-                            <th>Reason for Change</th>
-                            <th>Action To Take</th>
-
-                        </tr>
-                        {% for member in acl_changes %}
-                        <tr>
-                            <td> {{member.date}}
-                            <td> {{member.name}} </td>
-                            <td> {{member.state}} </td>
-                            <td> {{member.reason}} </td>
-                            <td><div class="whctools-acl-change {% if member.action == 'Remove' %} whctools-red-bg {% else %} whctools-green-bg{% endif %}" > {{member.action}} </div></td>
-                        </tr>
-                        {% endfor %}
-                    </table>
+                    {% if num_acl_changes > 0 %}
+                        <table class="table">
+                            <tr>
+                                <th>Time Last Changed</th>
+                                <th>Name</th>
+                                <th>Old State</th>
+                                <th>New State</th>
+                                <th>Reason for Change</th>
+                            </tr>
+                            {% for change in acl_changes %}
+                            <tr>
+                                <td> {{change.date}}
+                                <td> {{change.name}} </td>
+                                <td> {{change.old_state}} </td>
+                                <td> {{change.new_state}} </td>
+                                <td> {{change.reason}} </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    {% else %}
+                        <table class="table"><tr><td>
+                            <div class="whctools-error">
+                                No matching entries.
+                            </div>
+                        </td></tr></table>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

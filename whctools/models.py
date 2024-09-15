@@ -163,6 +163,9 @@ class DateTimeInput(forms.DateTimeInput):
 
 
 class AclHistoryRequest(forms.ModelForm):
+    limit = forms.IntegerField(widget=forms.NumberInput())
+    character_name = forms.CharField(required=False, widget=forms.TextInput())
+
     class Meta:
         model = ACLHistory
         fields = ["date_of_change"]
