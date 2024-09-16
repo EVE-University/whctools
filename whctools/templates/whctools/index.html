@@ -40,13 +40,13 @@
                                         {% if auth_char.is_main or auth_char.is_main_member %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.NOTAMEMBER%}
                                                 {% if auth_char.is_main %}
-                                                <div class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i>Please check you have the required skills or you will be rejected and subject to a timeout before you can reapply.</div>
+                                                <div class="whctools-good"><i class="fa fas fa-exclamation-triangle"></i>Please check you have <a href="https://wiki.eveuniversity.org/Wormhole_Community#Requirements"><u>these required skills</u></a> or you will be rejected and subject to a {{ withdraw_timeout }}-day timeout before you can reapply.</div>
                                                 {% endif %}
                                                 <a href="/whctools/apply/{{auth_char.char_id}}" class="whcbutton btn btn-primary" role="button">Apply</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.APPLIED%}
                                                 <div class="whctools-good">Your application is awaiting approval.
-                                                If you choose to withdraw it, you will be subject to a short timeout before you can reapply.</div>
+                                                If you choose to withdraw it, you will be subject to a {{ withdraw_timeout }}-day timeout before you can reapply.</div>
                                                 <a href="/whctools/withdraw/{{auth_char.char_id}}" class="whcbutton btn btn-warning" role="button">Withdraw</a>
                                             {% endif %}
                                             {% if auth_char.application.member_state == auth_char.application.MembershipStates.REJECTED%}

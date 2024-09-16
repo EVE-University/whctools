@@ -16,13 +16,34 @@
 
 {% block extra_css %}
 <style>
-
-    .whctools-tr {
+    .whctools-table > tbody > tr {
         border-top: solid 1px #797777;
     }
 
-    .whctools-tr > td {
+    .whctools-table > thead > tr {
+        background-color: rgb(64,69,75);
+    }
+
+    .whctools-table > :is(thead,tbody) > tr > :is(th,td) {
         vertical-align:middle !important;
+    }
+
+    .whctools-table-staff > :is(thead,tbody) > tr > :is(th,td) {
+        padding: 3px 8px 3px 8px;
+    }
+
+    .whctools-alt-row {
+        display: none;
+    }
+    /*.whctools-main-row:hover {
+        background-color: rgb(64,69,75);
+    }*/
+
+    .whctools-error-row {
+        background-color: rgb(213, 67, 62);
+    }
+    .whctools-error-row:hover {
+        background-color: rgb(217, 83, 79);
     }
 
     .media {
@@ -37,7 +58,6 @@
         padding-bottom: 2px;
         padding-left: 10px;
         padding-right: 10px;
-        margin-bottom: 5px;
     }
 
     .nav-tabs > li > a:hover {
@@ -45,17 +65,25 @@
         background: #375a7f;
     }
 
-    .whcpanel {
-        border-top-left-radius: 0px
-    }
-
     img {
         max-width: none;
         margin: 5px
     }
 
+    .panel {
+        margin-bottom: 10px; /* down from 20px */
+    }
+
+    .whcpanel {
+        border-top-left-radius: 0px
+    }
+
     .whctools-warning {
         color: #e89052;
+    }
+    .panel-warning {
+        border-color: #e89052;
+        background-color: rgb(64,69,75);
     }
 
     .whctools-error {
@@ -68,26 +96,6 @@
 
     img.whctools-image-disabled-class {
         filter: grayscale(100%);
-    }
-
-
-    .whctools-acl-change {
-        border-radius: 50px;
-        padding: 10px 20px;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        color: white;
-        width: 100px;
-    }
-    .whctools-red-bg {
-        background-color: red;
-
-    }
-    .whctools-green-bg{
-        background-color: green;
     }
 
     .whctools-alt-tag {
@@ -125,24 +133,6 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 999;
-    }
-
-
-    .whctools-main-row {
-        cursor: pointer;
-    }
-    .whctools-alt-row {
-        display: none;
-    }
-    .whctools-main-row:hover {
-        background-color: rgb(64,69,75);
-    }
-
-    .whctools-error-row {
-        background-color: rgb(213, 67, 62);
-    }
-    .whctools-error-row:hover {
-        background-color: rgb(217, 83, 79);
     }
 
     /* The modal (background) */

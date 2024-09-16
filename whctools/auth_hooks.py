@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from allianceauth import hooks
 from allianceauth.services.hooks import MenuItemHook, UrlHook
 
+from whctools.models import Applications
 from . import urls
 
 
@@ -21,6 +22,8 @@ class WhctoolsMenuItem(MenuItemHook):
 
     def render(self, request):
         if request.user.has_perm("whctools.basic_access"):
+            app_count = Applications.objects.filter(member_state=Applications.MembershipStates.APPLIED).count()
+            self.count = app_count if app_count and app_count>0 else None
             return MenuItemHook.render(self, request)
         return ""
 

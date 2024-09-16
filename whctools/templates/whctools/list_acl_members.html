@@ -10,35 +10,35 @@
 <div class="tab-content">
     <div id="staff" class="whcpanel panel panel-primary tab-pane active">
         <div class="whcpanel panel-heading">
-            <h3 class="panel-title">Members of the {{ acl_name }} ACL list</h3>
+            <h3 class="panel-title">Members of the "{{ acl_name }}" ACL</h3>
         </div>
         <div class="panel-body" style="min-height: 100px;">
 
             {% comment %} @@@ Probably would be better to move this into individual files {% endcomment %}
-            <ul class="nav nav-pills">
-                <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#all_members">All Members</a></li>
-                <li {% if date_selected %} class="active" {% endif %}><a data-toggle="pill" href="#after_date">Filter After</a></li>
-                <li class="pull-right">
-                    <button id="copyAclListButton" class="btn btn-primary">Copy ACL List</button>
-                </li>
-                {% comment %}
-                <li class="pull-right">
-                    <a id="syncAclGroups" class="btn btn-primary"
-                            href="/whctools/staff/{{ acl_name }}/sync_groups_with_acl">
-                        Sync Auth groups with this ACL
-                    </a>
-                </li>
-                {% endcomment %}
+            <ul class="nav nav-tabs">
+                <li {% if not date_selected %} class="active" {% endif %}><a data-toggle="tab" href="#all_members">All Members</a></li>
+                <li {% if date_selected %} class="active" {% endif %}><a data-toggle="tab" href="#after_date">Audit Log</a></li>
               </ul>
             <div class="tab-content">
+                {% comment %} ----- ACL Content pane ----- {% endcomment %}
                 <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
-                    <h1>All Known Members of {{ acl_name }} Access Control List</h1>
-                    <p> The following charcters are known to have acces to the ACl {{ acl_name }} - This list should be considered the truth, and if the ACL in game differs it should be adjusted to match this list!</p>
-                    <table class="table">
+                    <div class="panel-body">
+                            <div class="pull-left">
+                                {{ total_chars }} total characters ({{ total_mains }} mains)
+                            </div>
+                            <div class="pull-right">
+                                <button id="copyAclListButton" class="btn btn-primary whcbutton">Copy ACL as text</button>
+                                {% comment %}
+                                <a id="syncAclGroups" class="btn btn-primary whcbutton" href="/whctools/staff/{{ acl_name }}/sync_groups_with_acl">
+                                    Sync Auth groups with this ACL
+                                </a>
+                                {% endcomment %}
+                            </div>
+                    </div>
+                    <table class="table table-hover whctools-table whctools-table-staff">
                         <thead>
                             <tr>
                                 <th>{% comment %}Alt indicator column{% endcomment %}</th>
-                                <th>Portrait</th>
                                 <th>Character</th>
                                 <th>Alt</th>
                                 <th>Corp</th>
@@ -50,7 +50,6 @@
                             {% for orphan in orphans %}
                             <tr class="whctools-main-row whctools-error-row" data-member-id="">
                                 <td></td>
-                                <td><img src="{{ orphan.portrait_url }}" alt="{{ orphan.character_name }}"></td>
                                 <td>{{orphan.character_name}}</td>
                                 <td><b>No main found</b></td>
                                 <td>{{orphan.corporation_name}}</td>
@@ -63,7 +62,6 @@
                                 {% with member.alts|length as alts_length %}
                                     <td>{% if alts_length > 0 %}<i class="alt-caret fas fa-solid fa-caret-right"></i>{% endif %}</td>
                                 {% endwith %}
-                                <td><img src="{{ member.main.portrait_url }}" alt="{{ member.main.name }}"></td>
                                 <td>{{member.main.name}}</td>
                                 <td><i>Main</i></td>
                                 <td>{{member.main.corp}}</td>
@@ -75,7 +73,6 @@
                             {% for alt in member.alts %}
                             <tr class="whctools-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
                                 <td>⤷</td>
-                                <td><img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
                                 <td><div class="whctools-alt-tag whctools-green-bg">Member</div></td>
                                 <td>{{alt.name}}</td>
                                 <td>{{alt.corp}}</td>
@@ -86,7 +83,6 @@
                             {% for alt in member.complete_alts %}
                             <tr class="whc-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
                                 <td>⤷</td>
-                                <td><img src="{{ alt.portrait_url }}" alt="{{ alt.name }}"></td>
                                 <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div></td>
                                 <td>{{alt.name}}</td>
                                 <td>{{alt.corp}}</td>
@@ -98,42 +94,69 @@
                         </tbody>
                     </table>
                 </div>
+                {% comment %} ----- Audit Log pane ----- {% endcomment %}
                 <div id="after_date" class="panel panel-default tab-pane {% if date_selected %} active {% endif %}">
-                    <form method="post" class="form-inline">
-                        {% csrf_token %}
-                        <div class="form-group mb-2">
-                            <label for="{{ acl_history_request.date_of_change.id_for_label }}">Made On</label>
-                            {{ acl_history_request.date_of_change }}
-                            {% if acl_history_request.date_of_change.errors %}
-                                <div class="text-danger">
-                                    {{ acl_history_request.date_of_change.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <button type="submit" class="btn btn-primary mb-2">Get History</button>
-                    </form>
+                    <div class="panel-body">
+                        <form method="post" class="form-inline">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ acl_history_request.date_of_change.id_for_label }}">After: </label>
+                                {{ acl_history_request.date_of_change }}
+                                {% if acl_history_request.date_of_change.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.date_of_change.errors }}
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <label for="{{ acl_history_request.limit.if_for_label }}">Limit to: </label>
+                                {{ acl_history_request.limit }}
+                                (zero for all entries)
+                                {% if acl_history_request.limit.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.limit.errors }}
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <label for="{{ acl_history_request.character_name.id_for_label }}">For character: </label>
+                                {{ acl_history_request.character_name }}
+                                (leave blank for all characters)
+                                {% if acl_history_request.character_name.errors %}
+                                    <div class="text-danger">
+                                        {{ acl_history_request.character_name.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <br>
+                            <button type="submit" class="btn btn-primary mb-2">Get History</button>
+                        </form>
+                    </div>
                 {% if date_selected %}
-                    <table class="table">
-                        <tr>
-                            <th>Time Last Changed</th>
-                            <th>Portrait</th>
-                            <th>Name</th>
-                            <th>Last State</th>
-                            <th>Reason for Change</th>
-                            <th>Action To Take</th>
-
-                        </tr>
-                        {% for member in acl_changes %}
-                        <tr>
-                            <td> {{member.date}}
-                            <td> <img src="{{ member.portrait_url }}" alt="{{ member.name }}"> </td>
-                            <td> {{member.name}} </td>
-                            <td> {{member.state}} </td>
-                            <td> {{member.reason}} </td>
-                            <td><div class="whctools-acl-change {% if member.action == 'Remove' %} whctools-red-bg {% else %} whctools-green-bg{% endif %}" > {{member.action}} </div></td>
-                        </tr>
-                        {% endfor %}
-                    </table>
+                    {% if num_acl_changes > 0 %}
+                        <table class="table">
+                            <tr>
+                                <th>Time Last Changed</th>
+                                <th>Name</th>
+                                <th>Old State</th>
+                                <th>New State</th>
+                                <th>Reason for Change</th>
+                            </tr>
+                            {% for change in acl_changes %}
+                            <tr>
+                                <td> {{change.date}}
+                                <td> {{change.name}} </td>
+                                <td> {{change.old_state}} </td>
+                                <td> {{change.new_state}} </td>
+                                <td> {{change.reason}} </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    {% else %}
+                        <table class="table"><tr><td>
+                            <div class="whctools-error">
+                                No matching entries.
+                            </div>
+                        </td></tr></table>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
