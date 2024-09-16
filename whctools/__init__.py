@@ -3,5 +3,5 @@
 # pylint: disable = invalid-name
 default_app_config = "whctools.apps.WhctoolsConfig"
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __title__ = "WHC Tools"
