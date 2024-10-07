@@ -249,11 +249,20 @@ def accept(request, char_id, acl_name="WHC"):
 @login_required
 @permission_required("whctools.whc_officer")
 def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
+    logger.debug(f"Attempting to delete character with char_id: {char_id}, reason: {reason}, days: {days}")
 
-    logger.debug(f"char_id: {char_id}, reason {reason}, days {days}")
-    whcapplication = Applications.objects.filter(eve_character_id=char_id)
+    if source == "acl":
+        redirect_target = redirect(f"/whctools/staff/action/{acl_name}/view")
+    else:
+        redirect_target = redirect("/whctools/staff/open")
 
-    logger.debug(whcapplication)
+    whcapplication = Applications.objects.filter(eve_character__character_id=char_id)
+
+    if whcapplication.exists():
+        logger.debug(whcapplication)
+    else:
+        logger.error(f"Cannot find character {char_id} to delete.")
+        return redirect_target
 
     if whcapplication:  # @@@ move this into template
         member_application = whcapplication[0]
@@ -313,11 +322,8 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
             f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
             + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
         )
-    if source == "acl":
-        return redirect(f"/whctools/staff/action/{acl_name}/view")
-    else:
-        return redirect("/whctools/staff/open")
 
+    return redirect_target
 
 @login_required
 @permission_required("whctools.whc_officer")
@@ -401,98 +407,107 @@ def list_acl_members(request, acl_pk=""):
             num_acl_changes = len(acl_changes)
 
     # ACL
-    mains_and_alts = {}
-    orphaned_members = []
+    char_list = []
     sentinel_user = get_sentinel_user()
-    for memb in members_on_acl:
-        user_obj = get_user_from_evecharacter(memb)
-        if user_obj == sentinel_user:
-            orphaned_members.append(memb)
-            logger.info(f"WHC ACL '{acl_pk}' has orphaned member '{memb}'")
-            continue
+    mains_set = set([]) # just mains in ACL
+    players_set = set([]) # includes mains in and not in ACL
+    for member in members_on_acl:
+        name = member.character_name
+        char_id = member.character_id
+        main = None
+        corp = member.corporation_name
+        alliance = member.alliance_name
+        error = None
 
-        mains_and_alts.setdefault(user_obj.id, {})
-        if "main" not in mains_and_alts[user_obj.id].keys():
-            mains_and_alts[user_obj.id]["main"] = get_main_character_from_evecharacter(
-                memb
-            )
+        main_character = get_main_character_from_evecharacter(member)
+        if main_character is None:
+            main = '?'
+            error = 'Orphaned character'
+            logger.info(f"WHC ACL '{acl_pk}': character '{name}' is an orphan with no main")
+        else:
+            main = main_character.character_name
+            players_set.add(main)
 
-        if mains_and_alts[user_obj.id]["main"] is None:
-            logger.error(f"Unable to retrieve main character for '{str(memb)}' of user '{str(user_obj)}'")
-            orphaned_members.append(memb)
-            continue
+        if name == main:
+            mains_set.add(main)
 
-        mains_and_alts[user_obj.id].setdefault("alts", []).append(memb)
-        mains_and_alts[user_obj.id].setdefault(
-            "complete_alts", get_all_characters_from_user(user_obj)
-        )
+        if not is_character_in_allowed_corp(member):
+            logger.info(f"WHC ACL '{acl_pk}': character '{name}' is in an invalid corp or alliance")
+            error = 'Disallowed corp/alliance'
+        # I believe this isn't possible, since a user has to swap Uni mains in
+        # order for them to remain in the Uni.
+        if main_character is not None and not is_character_in_allowed_corp(main_character):
+            logger.info(f"WHC ACL '{acl_pk}': character '{name}' has a main '{main}' in an invalid corp or alliance")
+            error = 'Main in disallowed corp/alliance'
 
-    alphabetical_orphans = sorted(orphaned_members, key=lambda x: x.character_name)
+        char_list.append({
+            "name": name,
+            "id": char_id,
+            "main": main,
+            "corp": corp,
+            "alliance": alliance,
+            "error": error,
+            "is_main": (name==main),
+            "main_in_acl": False, # We'll backfill this
+        })
 
-    # note to self - x[1] is not a list index, but a tuple index, becaus its .items(), returning (key, value)
-    # and it has to be for it to remain a dict after sorting
-    alphabetical_mains = dict(
-        sorted(mains_and_alts.items(), key=lambda x: x[1]["main"].character_name)
-    )
+    # Backfill mains
+    for char in char_list:
+        if char["main"] in mains_set:
+            char["main_in_acl"] = True
 
-    for character in alphabetical_mains.values():
-        character["main"] = {
-            "name": character["main"].character_name,
-            "corp": character["main"].corporation_name,
-            "alliance": character["main"].alliance_name,
-            "portrait_url": character["main"].portrait_url(32),
-            "character_id": character["main"].id,
-        }
-        character["alts"] = list(
-            sorted(
-                [
-                    {
-                        "name": m.character_name,
-                        "corp": m.corporation_name,
-                        "alliance": m.alliance_name,
-                        "portrait_url": m.portrait_url(32),
-                        "character_id": m.id,
-                    }
-                    for m in character["alts"]
-                    if m.character_name != character["main"]["name"]
-                ],
-                key=lambda x: x["name"],
-            )
-        )
+    # sorted() Key function
+    class ACLSorter(object):
+        __slots__ = ['obj']
+        def __init__(self, obj):
+            self.obj = obj
+        def __getitem__(self, key):
+            return self.obj[key]
+        def __lt__(self, rhs):
+            lhs = self.obj
+            # Always float errors to the top
+            # If they're both errors, revert to normal behavior
+            if lhs['error'] is not None and rhs['error'] is None:
+                return True
+            if rhs['error'] is not None and lhs['error'] is None:
+                return False
+            # Sort by main first
+            if lhs['main'] != rhs['main']:
+                return lhs['main'] < rhs['main']
+            else: # both are alts of the same main
+                # Then float the main to the top of the alt group
+                if lhs['name'] == lhs['main']:
+                    return True
+                if rhs['name'] == rhs['main']:
+                    return False
+                return lhs['name'] < rhs['name']
+        def __gt__(self, rhs):
+            return not self.__lt__(rhs)
+        def __eq__(self, rhs):
+            return False
+        def __le__(self, rhs):
+            return self.__lt__(rhs)
+        def __ge__(self, rhs):
+            return self.__gt__(rhs)
+        __hash__ = None
 
-        acl_alt_names = [alt["name"] for alt in character["alts"]]
-
-        character["complete_alts"] = list(
-            sorted(
-                [
-                    {
-                        "name": m.character_name,
-                        "corp": m.corporation_name,
-                        "alliance": m.alliance_name,
-                        "portrait_url": m.portrait_url(32),
-                    }
-                    for m in character["complete_alts"]
-                    if m.character_name not in acl_alt_names
-                    and m.character_name != character["main"]["name"]
-                ],
-                key=lambda x: x["name"],
-            )
-        )
-
-    # Pre-compute aggregates
-    total_mains = len(alphabetical_mains)
-    total_chars = acl_obj.characters.count()
+    sorted_char_list = sorted(char_list, key=ACLSorter)
+    total_mains = len(mains_set)
+    total_players = len(players_set)
+    total_chars = len(char_list)
 
     context = {
+        "acl_name": acl_pk,
+
         "total_mains": total_mains,
         "total_chars": total_chars,
-        "members": alphabetical_mains.values(),
-        "orphans": alphabetical_orphans,
-        "acl_name": acl_pk,
+        "total_players": total_players,
+        "characters": sorted_char_list,
+
         "date_selected": date_selected,
         "acl_changes": acl_changes,
         "num_acl_changes": num_acl_changes,
-        "raw_acl_copy_text": generate_raw_copy_for_acl(alphabetical_mains),
+        "raw_acl_copy_text": generate_raw_copy_for_acl(sorted_char_list),
         "acl_history_request": acl_history_request,
         "reject_timers": {
             "large_reject": LARGE_REJECT,
