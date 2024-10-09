@@ -242,16 +242,13 @@ def remove_in_process_application(user, application_details):
         )
 
 
-def generate_raw_copy_for_acl(acl_characters: dict):
+def generate_raw_copy_for_acl(sorted_char_list: list):
     output = []
-    for user in acl_characters.values():
-        main_character_name = user["main"]["name"]
-        output.append(f"Main: {main_character_name}")
-        alts = user["alts"]
-        for char in alts:
-            output.append(f"Alt: {char['name']}")
-
-        output.append("----")
+    for character in sorted_char_list:
+        if character['is_main']:
+            output.append(f"Main: {character['name']}")
+        else:
+            output.append(f"Alt: {character['name']}")
 
     return "\n".join(output)
 

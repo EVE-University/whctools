@@ -24,7 +24,7 @@
                 <div id="all_members" class="panel panel-default tab-pane {% if not date_selected %} active {% endif %}">
                     <div class="panel-body">
                             <div class="pull-left">
-                                {{ total_chars }} total characters ({{ total_mains }} mains)
+                                {{ total_chars }} total characters ({{ total_players }} people)
                             </div>
                             <div class="pull-right">
                                 <button id="copyAclListButton" class="btn btn-primary whcbutton">Copy ACL as text</button>
@@ -36,58 +36,33 @@
                     <table class="table table-hover whctools-table whctools-table-staff">
                         <thead>
                             <tr>
-                                <th>{% comment %}Alt indicator column{% endcomment %}</th>
                                 <th>Character</th>
-                                <th>Alt</th>
+                                <th>Main</th>
                                 <th>Corp</th>
                                 <th>Alliance</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for orphan in orphans %}
-                            <tr class="whctools-main-row whctools-error-row" data-member-id="">
-                                <td></td>
-                                <td>{{orphan.character_name}}</td>
-                                <td><b>No main found</b></td>
-                                <td>{{orphan.corporation_name}}</td>
-                                <td>{{orphan.alliance_name}}</td>
-                                <td><a href="/whctools/staff/action/{{orphan.character_id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Character</a></td>
-                            </tr>
-                            {% endfor %}
-                            {% for member in members %}
-                            <tr class="whctools-main-row" data-member-id="{{ member.main.character_id }}">
-                                {% with member.alts|length as alts_length %}
-                                    <td>{% if alts_length > 0 %}<i class="alt-caret fas fa-solid fa-caret-right"></i>{% endif %}</td>
-                                {% endwith %}
-                                <td>{{member.main.name}}</td>
-                                <td><i>Main</i></td>
-                                <td>{{member.main.corp}}</td>
-                                <td>{{member.main.alliance}}</td>
+                            {% for character in characters %}
+                            <tr class="whctools-main-row {% if character.error %}whctools-error-row{% else %}whctools-row{% endif %}" data-member-id="">
                                 <td>
-                                    <a href="/whctools/staff/action/{{member.main.character_id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a>
+                                    {% if character.is_main %}<b>{{character.name}}</b>
+                                    {% else %}⤷ {{character.name}}
+                                    {% endif %}
                                 </td>
+                                <td>{% if not character.error and not character.main_in_acl %}<span class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i> {{character.main}}</span>
+                                    {% else %}{{character.main}}
+                                    {% endif %}
+                                </td>
+                                <td>{{character.corp}}</td>
+                                <td>{{character.alliance}}</td>
+                                {% if character.is_main %}
+                                    <td><a href="/whctools/staff/action/{{character.id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a></td>
+                                {% else %}
+                                    <td><a href="/whctools/staff/action/{{character.id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Alt</a></td>
+                                {% endif %}
                             </tr>
-                            {% for alt in member.alts %}
-                            <tr class="whctools-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
-                                <td>⤷</td>
-                                <td><div class="whctools-alt-tag whctools-green-bg">Member</div></td>
-                                <td>{{alt.name}}</td>
-                                <td>{{alt.corp}}</td>
-                                <td>{{alt.alliance}}</td>
-                                <td><a href="/whctools/staff/action/{{alt.character_id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Alt</a></td>
-                            </tr>
-                            {% endfor %}
-                            {% for alt in member.complete_alts %}
-                            <tr class="whc-alt-row" data-parent-id="{{ member.main.character_id }}" style="display:none;">
-                                <td>⤷</td>
-                                <td><div class="whctools-alt-tag whctools-red-bg">NOT ON ACL</div></td>
-                                <td>{{alt.name}}</td>
-                                <td>{{alt.corp}}</td>
-                                <td>{{alt.alliance}}</td>
-                                <td></td>
-                            </tr>
-                            {% endfor %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -250,15 +225,15 @@
     });
 
     var removeAltButtons = document.querySelectorAll('#remove-alt');
-        removeAltButtons.forEach(function(button) {
-            button.addEventListener('click', function(event) {
-                event.preventDefault(); // Prevent the default action (navigation)
-                var confirmAction = confirm("Are you sure you want to remove this alt?");
-                if (confirmAction) {
-                    window.location.href = button.getAttribute('href'); // Proceed with the action
-                }
-            });
+    removeAltButtons.forEach(function(button) {
+        button.addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent the default action (navigation)
+            var confirmAction = confirm("Are you sure you want to remove this alt?");
+            if (confirmAction) {
+                window.location.href = button.getAttribute('href'); // Proceed with the action
+            }
         });
+    });
 
 </script>
 {% endblock %}
