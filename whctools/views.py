@@ -264,64 +264,68 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
         logger.error(f"Cannot find character {char_id} to delete.")
         return redirect_target
 
-    if whcapplication:  # @@@ move this into template
-        member_application = whcapplication[0]
-        old_state = member_application.member_state
-        notify_subject = "Application Denied"
+    # @@@ move this into template?
+    member_application = whcapplication[0]
+    old_state = member_application.member_state
+    notify_subject = "Application Denied"
 
-        # Removed should only be triggered by the removal by staff directly after a membership is allready accepted
-        if reason == "removed":
-            # If a WHC character is forcefully removed, remove all alts as well.
-            logger.debug(
-                f"Removing {member_application.eve_character.character_name} and all their alts from {acl_name}"
-            )
-            rejection_reason = Applications.RejectionStates.REMOVED
-            notify_subject = "Membership Revoked"
-            notification_names = remove_all_alts(
-                acl_name,
-                member_application,
-                Applications.MembershipStates.REJECTED,
-                rejection_reason,
-                days,
-            )
-
-        else:
-            # Other can be used for individual removal of alts that need cleaning up.
-            # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
-            logger.debug(
-                f"Singleton removal of {member_application.eve_character.character_name}"
-            )
-
-            rejection_reason = (
-                Applications.RejectionStates.SKILLS
-                if reason == "skills"
-                else Applications.RejectionStates.OTHER
-            )
-            notification_names = member_application.eve_character.character_name
-            remove_character_from_community(
-                member_application,
-                Applications.MembershipStates.REJECTED,
-                rejection_reason,
-                days,
-            )
-            remove_character_from_acl(
-                member_application.eve_character.character_id,
-                acl_name,
-                old_state,
-                member_application.member_state,
-                rejection_reason,
-            )
-
-        log_application_change(
-            application=member_application, old_state=old_state, reason=rejection_reason
+    # Removed should only be triggered by the removal by staff directly after a membership is allready accepted
+    if reason == "removed":
+        # If a WHC character is forcefully removed, remove all alts as well.
+        logger.debug(
+            f"Removing {member_application.eve_character.character_name} and all their alts from {acl_name}"
+        )
+        rejection_reason = Applications.RejectionStates.REMOVED
+        notify_subject = "Membership Revoked"
+        notification_names = remove_all_alts(
+            acl_name,
+            member_application,
+            Applications.MembershipStates.REJECTED,
+            rejection_reason,
+            days,
         )
 
+    else:
+        # Other can be used for individual removal of alts that need cleaning up.
+        # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
+        logger.debug(
+            f"Singleton removal of {member_application.eve_character.character_name}"
+        )
+
+        rejection_reason = (
+            Applications.RejectionStates.SKILLS
+            if reason == "skills"
+            else Applications.RejectionStates.OTHER
+        )
+        notification_names = member_application.eve_character.character_name
+        remove_character_from_community(
+            member_application,
+            Applications.MembershipStates.REJECTED,
+            rejection_reason,
+            days,
+        )
+        remove_character_from_acl(
+            member_application.eve_character.character_id,
+            acl_name,
+            old_state,
+            member_application.member_state,
+            rejection_reason,
+        )
+
+    log_application_change(
+        application=member_application, old_state=old_state, reason=rejection_reason
+    )
+
+    try:
+        # If this is an orphan, we won't know who to notify since there's no associated user.
         notify.danger(
             member_application.eve_character.character_ownership.user,
             f"{acl_name} Community: {notify_subject}",
             f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
             + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
-        )
+      )
+    except:
+        pass
 
     return redirect_target
 
