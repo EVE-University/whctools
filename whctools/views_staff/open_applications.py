@@ -78,7 +78,7 @@ def all_characters_currently_with_open_apps():
 def getSkills(eve_char_id):
 
     application = Applications.objects.filter(
-        eve_character_id=eve_char_id
+        eve_character__character_id=eve_char_id
     ).select_related("eve_character")[0]
 
     existing_acls = Acl.objects.all()

@@ -34,18 +34,18 @@
                     {% if char.is_main_char and not char.ma_is_valid %}
                     <div class="whctools-error"><i class="fa fas fa-exclamation-triangle"></i> Failed to fetch skills from Member Audit.<br>Refresh page or ask player to re-register if it persists.</div>
                     {% else %}
-                    <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character_id }}">Check Skills</button>
+                    <button class="whcbutton btn btn-primary openSkillcheckPopup" data-character-id="{{ char.application.eve_character.character_id }}">Check Skills</button>
                     {% endif %}
                 </td>
                 <td>
-                    <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.id }}">
+                    <select class="acl-dropdown" data-character-id="{{ char.application.eve_character.character_id }}">
                         {% for acl in existing_acls %}
                             <option value="{{ acl.name }}">{{ acl.name }}</option>
                         {% endfor %}
                     </select>
                     <button class="whcbutton btn btn-primary accept-button" role="button">Accept</button>
-                    <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/skills/{{ reject_timers.short_reject }}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
-                    <a href="/whctools/staff/action/{{ char.application.eve_character.id }}/reject/other/{{ reject_timers.medium_reject }}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
+                    <a href="/whctools/staff/action/{{ char.application.eve_character.character_id }}/reject/skills/{{ reject_timers.short_reject }}" class="whcbutton btn btn-warning" role="button">Reject: Skills</a>
+                    <a href="/whctools/staff/action/{{ char.application.eve_character.character_id }}/reject/other/{{ reject_timers.medium_reject }}" class="whcbutton btn btn-danger" role="button">Reject: Other</a>
                 </td>
             </tr>
             {% endfor %}

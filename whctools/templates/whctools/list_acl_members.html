@@ -58,9 +58,9 @@
                                 <td>{{character.corp}}</td>
                                 <td>{{character.alliance}}</td>
                                 {% if character.is_main %}
-                                    <td><a href="/whctools/staff/action/{{character.id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a></td>
+                                    <td><a href="/whctools/staff/action/{{character.char_id}}/reject/removed/{{reject_timers.large_reject}}/acl" class="whcbutton btn btn-danger" role="button" id="kick-all">Kick All</a></td>
                                 {% else %}
-                                    <td><a href="/whctools/staff/action/{{character.id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Alt</a></td>
+                                    <td><a href="/whctools/staff/action/{{character.char_id}}/reject/other/{{reject_timers.medium_reject}}/acl" class="whcbutton btn btn-warning" role="button" id="remove-alt">Remove Alt</a></td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
