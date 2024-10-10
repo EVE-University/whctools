@@ -214,7 +214,7 @@ def withdraw(request, char_id, acl_name="WHC"):
 def accept(request, char_id, acl_name="WHC"):
 
     whcapplication = Applications.objects.filter(
-        eve_character_id=char_id
+        eve_character__character_id=char_id
     ).select_related("eve_character")
 
     if whcapplication:
@@ -257,10 +257,7 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
         redirect_target = redirect("/whctools/staff/open")
 
     whcapplication = Applications.objects.filter(eve_character__character_id=char_id)
-
-    if whcapplication.exists():
-        logger.debug(whcapplication)
-    else:
+    if not whcapplication.exists():
         logger.error(f"Cannot find character {char_id} to delete.")
         return redirect_target
 
@@ -333,7 +330,7 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
 @permission_required("whctools.whc_officer")
 def reset(request, char_id, acl_name="WHC"):
 
-    whcapplication = Applications.objects.filter(eve_character_id=char_id)
+    whcapplication = Applications.objects.filter(eve_character__character_id=char_id)
 
     if whcapplication:
         member_application = whcapplication[0]
@@ -446,7 +443,7 @@ def list_acl_members(request, acl_pk=""):
 
         char_list.append({
             "name": name,
-            "id": char_id,
+            "char_id": char_id,
             "main": main,
             "corp": corp,
             "alliance": alliance,
