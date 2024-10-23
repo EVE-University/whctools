@@ -21,11 +21,14 @@ class WhctoolsMenuItem(MenuItemHook):
         )
 
     def render(self, request):
-        if request.user.has_perm("whctools.basic_access"):
+        if request.user.has_perm("whctools.whc_officer"):
             app_count = Applications.objects.filter(member_state=Applications.MembershipStates.APPLIED).count()
-            self.count = app_count if app_count and app_count>0 else None
+            self.count = app_count if app_count and app_count > 0 else None
             return MenuItemHook.render(self, request)
-        return ""
+        elif request.user.has_perm("whctools.basic_access"):
+            return MenuItemHook.render(self, request)
+        else:
+            return ""
 
 
 @hooks.register("menu_item_hook")
