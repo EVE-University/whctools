@@ -51,15 +51,16 @@ from whctools.app_settings import (
 from whctools.models import Acl, ACLHistory, AclHistoryRequest, Applications
 
 from .utils import (
-    add_character_to_acl,
+    add_character,
     generate_raw_copy_for_acl,
     get_corp_requirements_message,
     is_character_in_allowed_corp,
     log_application_change,
     remove_all_alts,
-    remove_character_from_acl,
+    remove_character,
     remove_character_from_community,
-    synchronize_groups_from_acl,
+    sync_groups_with_acl_helper,
+    sync_wanderer_with_acl_helper,
 )
 from .views_actions.player_actions import submit_application
 from .views_staff.open_applications import all_characters_currently_with_open_apps
@@ -228,14 +229,13 @@ def accept(request, char_id, acl_name="WHC"):
             application=member_application,
             old_state=member_application.member_state,
         )
-        add_character_to_acl(
+        add_character(
             acl_name,
             member_application.eve_character,
             old_state,
             Applications.MembershipStates.ACCEPTED,
             ACLHistory.ApplicationStateChangeReason.ACCEPTED,
         )
-
         notify.success(
             main_user,
             f"{acl_name} application: Approved",
@@ -258,9 +258,7 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
 
     whcapplication = Applications.objects.filter(eve_character__character_id=char_id)
 
-    if whcapplication.exists():
-        logger.debug(whcapplication)
-    else:
+    if not whcapplication.exists():
         logger.error(f"Cannot find character {char_id} to delete.")
         return redirect_target
 
@@ -289,7 +287,7 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
             # Other can be used for individual removal of alts that need cleaning up.
             # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
             logger.debug(
-                f"Singleton removal of {member_application.eve_character.character_name}"
+                f"Removing {member_application.eve_character.character_name} from {acl_name}"
             )
 
             rejection_reason = (
@@ -304,9 +302,9 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
                 rejection_reason,
                 days,
             )
-            remove_character_from_acl(
-                member_application.eve_character.character_id,
+            remove_character(
                 acl_name,
+                member_application.eve_character,
                 old_state,
                 member_application.member_state,
                 rejection_reason,
@@ -316,12 +314,15 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
             application=member_application, old_state=old_state, reason=rejection_reason
         )
 
-        notify.danger(
-            member_application.eve_character.character_ownership.user,
-            f"{acl_name} Community: {notify_subject}",
-            f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
-            + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
-        )
+        try:
+            notify.danger(
+                member_application.eve_character.character_ownership.user,
+                f"{acl_name} Community: {notify_subject}",
+                f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
+                + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
+            )
+        except: # Best effort. If the owner doesn't exist, forget it.
+            pass
 
     return redirect_target
 
@@ -346,19 +347,22 @@ def reset(request, char_id, acl_name="WHC"):
             logger.debug(
                 f"Removing {member_application.eve_character.character_name} from {acl_name}"
             )
-            remove_character_from_acl(
-                member_application.eve_character.character_id,
+            remove_character(
                 acl_name,
+                member_application.eve_character.character_id,
                 old_state,
                 member_application.member_state,
                 ACLHistory.ApplicationStateChangeReason.REMOVED,
             )
 
-        notify.success(
-            member_application.eve_character.character_ownership.user,
-            f"{acl_name} application availability reset",
-            f"Your application to the {acl_name} Community on {member_application.eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
-        )
+        try:
+            notify.success(
+                member_application.eve_character.character_ownership.user,
+                f"{acl_name} application availability reset",
+                f"Your application to the {acl_name} Community on {member_application.eve_character.character_name} has been reset.\nYou may now reapply if you wish!",
+            )
+        except: # Best effort. If the owner doesn't exist, forget it.
+            pass
 
     return redirect("/whctools/staff/rejected")
 
@@ -532,5 +536,11 @@ def get_skills(request, char_id):
 @login_required
 @permission_required("whctools.whc_officer")
 def sync_groups_with_acl(request, acl_pk="WHC"):
-    synchronize_groups_from_acl(acl_pk)
+    sync_groups_with_acl_helper(acl_pk)
+    return redirect(f"/whctools/staff/action/{acl_pk}/view")
+
+@login_required
+@permission_required("whctools.whc_officer")
+def sync_wanderer_with_acl(request, acl_pk="WHC"):
+    sync_wanderer_with_acl_helper(acl_pk)
     return redirect(f"/whctools/staff/action/{acl_pk}/view")
