@@ -283,46 +283,46 @@ def reject(request, char_id, reason, days, source="staff", acl_name="WHC"):
             days,
         )
 
-        else:
-            # Other can be used for individual removal of alts that need cleaning up.
-            # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
-            logger.debug(
-                f"Removing {member_application.eve_character.character_name} from {acl_name}"
-            )
+    else:
+        # Other can be used for individual removal of alts that need cleaning up.
+        # note: currently only used on the reject an open application - additional @@@ TODO to hook up to the remove membership page
+        logger.debug(
+            f"Removing {member_application.eve_character.character_name} from {acl_name}"
+        )
 
-            rejection_reason = (
-                Applications.RejectionStates.SKILLS
-                if reason == "skills"
-                else Applications.RejectionStates.OTHER
-            )
-            notification_names = member_application.eve_character.character_name
-            remove_character_from_community(
-                member_application,
-                Applications.MembershipStates.REJECTED,
-                rejection_reason,
-                days,
-            )
-            remove_character(
-                acl_name,
-                member_application.eve_character,
-                old_state,
-                member_application.member_state,
-                rejection_reason,
-            )
+        rejection_reason = (
+            Applications.RejectionStates.SKILLS
+            if reason == "skills"
+            else Applications.RejectionStates.OTHER
+        )
+        notification_names = member_application.eve_character.character_name
+        remove_character_from_community(
+            member_application,
+            Applications.MembershipStates.REJECTED,
+            rejection_reason,
+            days,
+        )
+        remove_character(
+            acl_name,
+            member_application.eve_character,
+            old_state,
+            member_application.member_state,
+            rejection_reason,
+        )
 
     log_application_change(
         application=member_application, old_state=old_state, reason=rejection_reason
     )
 
-        try:
-            notify.danger(
-                member_application.eve_character.character_ownership.user,
-                f"{acl_name} Community: {notify_subject}",
-                f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
-                + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
-            )
-        except: # Best effort. If the owner doesn't exist, forget it.
-            pass
+    try:
+        notify.danger(
+            member_application.eve_character.character_ownership.user,
+            f"{acl_name} Community: {notify_subject}",
+            f"Your application to the {acl_name} Community on {notification_names} has been rejected.\n\n\t* Reason: {member_application.get_reject_reason_display()}"
+            + "\n\nIf you have any questions about this action, please contact WHC Community Coordinators on discord.",
+        )
+    except: # Best effort. If the owner doesn't exist, forget it.
+        pass
 
     return redirect_target
 
