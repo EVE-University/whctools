@@ -1,4 +1,6 @@
 import datetime
+import os
+import requests
 
 from django.utils import timezone
 
@@ -78,9 +80,9 @@ def remove_all_alts(acl_name, member_application, new_state, reason, reject_time
             )
             old_state = app.member_state
             remove_character_from_community(app, new_state, reason, reject_time)
-            remove_character_from_acl(
-                app.eve_character.character_id,
+            remove_character(
                 acl_name,
+                app.eve_character,
                 old_state,
                 app.member_state,
                 reason,
@@ -89,8 +91,11 @@ def remove_all_alts(acl_name, member_application, new_state, reason, reject_time
     notification_names = ", ".join([char.character_name for char in all_characters])
     return notification_names
 
+def remove_character(acl_name, eve_character, from_state, to_state, reason):
+    remove_character_from_acl(acl_name, eve_character, from_state, to_state, reason)
+    remove_character_from_wanderer(acl_name, eve_character.character_id, eve_character.character_name)
 
-def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
+def remove_character_from_acl(acl_name, eve_character, from_state, to_state, reason):
     """Helper function to remove a character from an acl"""
 
     acl_object = Acl.objects.filter(pk=acl_name)
@@ -98,7 +103,7 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
         user = None
         characters = acl_object[0].characters.all()
         for char in characters:
-            if char.character_id == char_id:
+            if char.character_id == eve_character.character_id:
                 user = get_user_from_evecharacter(char)
                 logger.debug(
                     f"Removing {char.character_name} form {acl_name} - setting to {Applications.MembershipStates(to_state).name} for {reason}"
@@ -122,7 +127,26 @@ def remove_character_from_acl(char_id, acl_name, from_state, to_state, reason):
         if len(characters)==0 and user is not None:
             for group in acl_object[0].groups.all():
                 user.groups.remove(group)
-          
+
+def remove_character_from_wanderer(acl_name, eve_character_id, eve_character_name="Unknown"):
+    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
+    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
+    if wanderer_acl_id is None or wanderer_acl_token is None:
+        logger.error(f"No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands.")
+        return
+    logger.debug(
+        f"Removing {eve_character_name} from Wanderer ACL {wanderer_acl_id}"
+    )
+    # Remove character
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}/members/{eve_character_id}"
+    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    r = requests.delete(api_url, headers=headers)
+    if r.status_code!=200:
+        logger.error(f"Unable to remove character {eve_character_name} from Wanderer ACL {wanderer_acl_id}: {r.status_code}")
+
+def add_character(acl_name, eve_character, old_state, new_state, reason):
+    add_character_to_acl(acl_name, eve_character, old_state, new_state, reason)
+    add_character_to_wanderer(acl_name, eve_character.character_id, eve_character.character_name)
 
 def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
     logger.debug(
@@ -145,7 +169,29 @@ def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
         user = get_user_from_evecharacter(eve_character)
         for group in acl_obj.groups.all():
             user.groups.add(group)
-        
+
+def add_character_to_wanderer(acl_name, eve_character_id, eve_character_name="Unknown"):
+    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
+    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
+    if wanderer_acl_id is None or wanderer_acl_token is None:
+        logger.error(f"No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands.")
+        return
+    logger.debug(
+        f"Adding {eve_character_name} to Wanderer ACL {wanderer_acl_id}"
+    )
+    # Add character
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}/members"
+    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    payload = {
+        "member": {
+            "eve_character_id": str(eve_character_id),
+            "role": "member",
+        }
+    }
+    r = requests.post(api_url, headers=headers, json=payload)
+    if r.status_code!=200:
+        logger.error(f"Unable to add character {eve_character_name} to Wanderer ACL {wanderer_acl_id}: {r.status_code}")
+
 
 def log_application_change(
     application: Applications,
@@ -180,9 +226,9 @@ def update_all_acls_for_character_leaving_alliance(
 
     for acl in acls_character_is_on:
         logger.debug(f"Removing {character.character_name} from {acl.name}")
-        remove_character_from_acl(
-            character.character_id,
+        remove_character(
             acl.name,
+            character.character_id,
             existing_acl_state,
             new_state,
             ACLHistory.ApplicationStateChangeReason.LEFT_UNI,
@@ -195,11 +241,12 @@ def update_all_acls_for_character_leaving_alliance(
         )
 
 
-def synchronize_groups_from_acl(acl_name):
+def sync_groups_with_acl_helper(acl_name):
     acl_result = Acl.objects.filter(pk=acl_name)
     if not acl_result:
-        logger.error(f"Attempted to synchronize groups from nonexistent ACL '{acl_name}'")
+        logger.error(f"Attempted to synchronize groups with nonexistent ACL '{acl_name}'")
         return
+    logger.debug(f"Attempting to synchronize groups with ACL '{acl_name}'")
     acl = acl_result[0]
     # Add characters in the ACL that should be in groups
     all_authorized_users = set([])
@@ -209,12 +256,64 @@ def synchronize_groups_from_acl(acl_name):
         for group in acl.groups.all():
             user.groups.add(group)
     # Remove characters not in the ACL that shouldn't be in groups
-    #import pdb; pdb.set_trace()
     for group in acl.groups.all():
         group_users = group.user_set.all()
         invalid_users = set(group_users) - all_authorized_users
         for user in invalid_users:
             user.groups.remove(group)
+
+def sync_wanderer_with_acl_helper(acl_name):
+    acl_result = Acl.objects.filter(pk=acl_name)
+    if not acl_result:
+        logger.error(f"Attempted to synchronize wanderer with nonexistent ACL '{acl_name}'")
+        return
+    logger.debug(f"Attempting to synchronize wanderer with ACL '{acl_name}'")
+    acl = acl_result[0]
+
+    # Grab Wanderer information from environment
+    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
+    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
+    if wanderer_acl_id is None or wanderer_acl_token is None:
+        logger.error(f"No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands.")
+        return
+
+    # Characters on wanderer may not by on auth and vice-versa. To make logging
+    # informative, we grab the names from both sources and unify them.
+    id_to_name = {}
+
+    # Pull set of all characters on Auth ACL
+    auth_char_tuples = set([(int(char.character_id), char.character_name) for char in acl.characters.all()])
+    auth_char_ids = set([t[0] for t in auth_char_tuples])
+    id_to_name.update(dict(auth_char_tuples))
+
+    # Pull set of all characters on Wanderer ACL
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}"
+    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    r = requests.get(api_url, headers=headers)
+    if r.status_code!=200:
+        logger.error(f"Unable to add character {eve_character.character_name} to Wanderer ACL {wanderer_acl_id}: {r.status_code}")
+        return
+    response = r.json()
+    try:
+        members = response["data"]["members"]
+    except KeyError:
+        logger.error(f"Malformed response received from Wanderer server: {response}")
+        return
+    wanderer_char_tuples = [(int(member["eve_character_id"]),member["name"]) for member in members]
+    if len(wanderer_char_tuples)==0:
+        logger.warning(f"Zero members received from Wanderer ACL. This is almost certainly wrong. *Someone* should have access. Aborting sync.")
+        return
+    wanderer_char_ids = set([t[0] for t in wanderer_char_tuples])
+    id_to_name.update(dict(wanderer_char_tuples))
+
+    # Add characters in the ACL that should be in groups
+    chars_to_add = list(auth_char_ids - wanderer_char_ids)
+    for char_id in chars_to_add:
+        add_character_to_wanderer(acl_name, char_id, id_to_name[char_id])
+    # Remove characters not in the ACL that shouldn't be in groups
+    chars_to_remove = list(wanderer_char_ids - auth_char_ids)
+    for char_id in chars_to_remove:
+        remove_character_from_wanderer(acl_name, char_id, id_to_name[char_id])
 
 
 def remove_in_process_application(user, application_details):

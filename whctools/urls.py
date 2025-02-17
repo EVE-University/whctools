@@ -30,5 +30,6 @@ urlpatterns = [
     ),
     #path("staff/list_acls", views.list_acls, name="staff_view_acl_lists"),
     path("staff/getSkills/<char_id>", views.get_skills, name="get_skills"),
-    path("staff/<acl_pk>/sync_groups_with_acl", views.sync_groups_with_acl, name="sync_groups_with_acl")
+    path("staff/<acl_pk>/sync_groups_with_acl", views.sync_groups_with_acl, name="sync_groups_with_acl"),
+    path("staff/<acl_pk>/sync_wanderer_with_acl", views.sync_wanderer_with_acl, name="sync_wanderer_with_acl"),
 ]
