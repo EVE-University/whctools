@@ -1,6 +1,7 @@
 {% extends 'whctools/base.html' %}
 {% load i18n %}
 {% load humanize %}
+{% csrf_token %}
 
 {% block details %}
 {% include 'whctools/staff/nav_pills.html' %}
@@ -47,7 +48,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
+    const csrftoken = getCookie('csrftoken');
+
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
 
     function showPopup(characterId, callback) {
         $.ajax({
@@ -103,8 +127,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function showMailEdit(callback) {
+        $.ajax({
+            url: `/whctools/staff/getMail`,
+            success: function(data) {
+                if (data.mail) {
+                    // Build the popup content with the data
+                    var content = '<h3>Update Mail Message</h3>';
+                    content += '<textarea id="mail-textarea" style="width: 50vw; height: 50vh;">'
+                    + data.mail
+                    + '</textarea>';
+                    content += '<br><br>';
+                    content += '<button id="submit-mail-btn" class="btn btn-primary">Submit</button>';
+                    content += '<button id="cancel-mail-btn" class="btn btn-secondary closeMailPopup" style="margin-left: 10px;">Cancel</button>';
+
+                    // Insert the content into the popup
+                    $('#mail-popup-data').html(content);
+
+                    // Display the popup
+                    $('#popup-container-mail').show();
+
+                } else {
+                    console.error('Data is not in the expected format:', data);
+                }
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            },
+
+            error: function() {
+                // Re-enable the button and remove the spinner cursor if the AJAX request fails
+                if (typeof callback === 'function') {
+                    callback();
+                }
+
+            }
+        });
+    }
+
     function closePopup() {
         $('#popup-container').hide();
+    }
+
+    function closeMailPopup() {
+        $('#popup-container-mail').hide();
     }
 
     $(document).ready(function() {
@@ -129,5 +196,48 @@ document.addEventListener('DOMContentLoaded', function() {
             closePopup();
         });
     });
+
+    $(document).ready(function() {
+        $('.openMailPopup').click(function() {
+            var button = $(this);
+
+            // Disable the button and change cursor to spinner
+            button.prop('disabled', true);
+            $('body').addClass('locked-cursor');
+
+            showMailEdit(function() {
+                // Re-enable the button and remove spinner cursor after the popup content is loaded
+                button.prop('disabled', false);
+                $('body').removeClass('locked-cursor');
+            });
+        });
+    });
+
+
+
+    $(document).on('click', '#submit-mail-btn', function() {
+        var newMailContent = $('#mail-textarea').val();
+        var payload = { "mail": newMailContent };
+
+        $.ajax({
+            url: '/whctools/staff/updateMail',
+            type: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json; charset=utf-8',
+
+            success: function(response) {
+                closeMailPopup();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating mail:', error);
+            }
+        });
+    });
+
+    $(document).on('click', '#cancel-mail-btn', function() {
+        closeMailPopup();
+    });
+
+
 </script>
 {% endblock %}

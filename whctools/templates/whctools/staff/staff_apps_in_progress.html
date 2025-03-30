@@ -8,6 +8,9 @@
                 <span class="whctools-warning"><i class="fa fas fa-exclamation-triangle"></i>
                 Remember to modify the in-game ACL <b>BEFORE</b> you hit "Accept". Otherwise you may lose track of who you accepted.
                 </span>
+                <div class="pull-right">
+                    <button class="btn btn-primary whcbutton openMailPopup">Update Welcome Mail</button>
+                </div>
             </div>
         </div>
     </div>
@@ -53,7 +56,7 @@
     </table>
 </div>
 
-<!-- Popup Container -->
+<!-- Popup Skill Container -->
 <div id="popup-container" class="whctools-skillcheck-popup">
     <div id="skill-popup-data">
 
@@ -62,6 +65,16 @@
 
     </div>
     <button class="whcbutton btn btn-danger closeSkillcheckPopup">Close</button>
+</div>
+
+<!-- Popup Mail Container -->
+<div id="popup-container-mail" class="whctools-mail-popup">
+    <div id="mail-popup-data">
+
+
+            <!-- The content from the AJAX call will be inserted here -->
+
+    </div>
 </div>
 
 <style>
