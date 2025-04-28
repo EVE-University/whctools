@@ -3,9 +3,8 @@
 from memberaudit.models import SkillSet
 
 from django import forms
-from django.db import models
-
 from django.contrib.auth.models import Group
+from django.db import models
 
 from allianceauth.eveonline.models import EveCharacter
 
@@ -105,7 +104,7 @@ class ApplicationHistory(models.Model):
 
     def __str__(self) -> str:
         if self.application is None:
-            return f"(Invalid application action)"
+            return "(Invalid application action)"
         return f"{self.application.eve_character.character_name} - {self.get_old_state_display()} to {self.get_new_state_display()}"
 
 
@@ -170,3 +169,7 @@ class AclHistoryRequest(forms.ModelForm):
         model = ACLHistory
         fields = ["date_of_change"]
         widgets = {"date_of_change": DateTimeInput()}
+
+
+class WelcomeMail(models.Model):
+    mail_content = models.TextField(null=True, blank=True)

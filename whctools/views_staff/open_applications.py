@@ -1,11 +1,8 @@
-import datetime
-
 from memberaudit.models import Character
 
 from allianceauth.eveonline.models import EveCharacter
 
 from whctools.app_settings import ESI_TASK_TIMEOUT_SECONDS
-from whctools.utils import get_last_ma_update_time
 
 try:
     # Alliance auth 4.0 only
@@ -23,7 +20,12 @@ from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
 from whctools.models import Acl, Applications
-from whctools.utils import is_main_eve_character, get_last_ma_update_time
+from whctools.utils import (
+    get_last_ma_update_time,
+    get_welcome_mail,
+    is_main_eve_character,
+    update_welcome_mail,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -36,7 +38,6 @@ def all_characters_currently_with_open_apps():
         .order_by("last_updated")
     )
 
-    
     # When we pull skills from member audit, we want to be sure that
     # they are recent and valid. For main characters, we force an update
     # when that character applies. But if that pull fails (expired token,
@@ -51,27 +52,25 @@ def all_characters_currently_with_open_apps():
         try:
             eve_char = app.eve_character
         except Exception as e:
-            logger.error(f"No character for {str(app)}")
+            logger.error(f"No character for {str(app)}: {e}")
             ma_is_valid.append(False)
             is_main_char.append(False)
             continue
         is_main = is_main_eve_character(eve_char)
         is_main_char.append(is_main)
 
-        last_ma_update = get_last_ma_update_time(eve_char) # returns 1970 if error
+        last_ma_update = get_last_ma_update_time(eve_char)  # returns 1970 if error
         app_applied_at = app.last_updated
         ma_age = (app_applied_at - last_ma_update).total_seconds()
-        ma_is_valid.append(
-            ma_age < ESI_TASK_TIMEOUT_SECONDS
-        )
+        ma_is_valid.append(ma_age < ESI_TASK_TIMEOUT_SECONDS)
 
     return [
-        { "application": application,
-          "ma_is_valid": valid,
-          "is_main_char": is_main,
+        {
+            "application": application,
+            "ma_is_valid": valid,
+            "is_main_char": is_main,
         }
-        for application,valid,is_main
-        in zip(chars_applied,ma_is_valid,is_main_char)
+        for application, valid, is_main in zip(chars_applied, ma_is_valid, is_main_char)
     ]
 
 
@@ -86,7 +85,7 @@ def getSkills(eve_char_id):
     user = get_user_from_evecharacter(eve_char)
     all_characters = get_all_characters_from_user(user)
 
-    alt_data = {} # { alt : (last_updated, {skillset: can_fly}) }
+    alt_data = {}  # { alt : (last_updated, {skillset: can_fly}) }
 
     for char in all_characters:
         try:
@@ -114,3 +113,13 @@ def getSkills(eve_char_id):
         "alt_data": alt_data,
         "applying_character": eve_char.character_name,
     }
+
+
+def getMail():
+    mail = get_welcome_mail()
+    return {"mail": mail}
+
+
+def updateMail(message):
+    mail = update_welcome_mail(message)
+    return {"mail": mail}
