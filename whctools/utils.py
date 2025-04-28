@@ -1,5 +1,4 @@
 import datetime
-import os
 
 import requests
 from memberaudit.models import Character as MACharacter
@@ -23,7 +22,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
-from whctools.app_settings import ALLOWED_ALLIANCES
+from whctools.app_settings import ALLOWED_ALLIANCES, WANDERER_ACL_ID, WANDERER_ACL_TOKEN
 from whctools.models import (
     Acl,
     ACLHistory,
@@ -158,21 +157,19 @@ def remove_character_from_acl(acl_name, eve_character, from_state, to_state, rea
 def remove_character_from_wanderer(
     acl_name, eve_character_id, eve_character_name="Unknown"
 ):
-    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
-    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
-    if wanderer_acl_id is None or wanderer_acl_token is None:
+    if WANDERER_ACL_ID is None or WANDERER_ACL_TOKEN is None:
         logger.error(
-            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands."
+            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN app_settings found. Unable to issue API commands."
         )
         return
-    logger.debug(f"Removing {eve_character_name} from Wanderer ACL {wanderer_acl_id}")
+    logger.debug(f"Removing {eve_character_name} from Wanderer ACL {WANDERER_ACL_ID}")
     # Remove character
-    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}/members/{eve_character_id}"
-    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{WANDERER_ACL_ID}/members/{eve_character_id}"
+    headers = {"Authorization": f"Bearer {WANDERER_ACL_TOKEN}"}
     r = requests.delete(api_url, headers=headers)
     if r.status_code != 200:
         logger.error(
-            f"Unable to remove character {eve_character_name} from Wanderer ACL {wanderer_acl_id}: {r.status_code}"
+            f"Unable to remove character {eve_character_name} from Wanderer ACL {WANDERER_ACL_ID}: {r.status_code}"
         )
 
 
@@ -273,17 +270,15 @@ def add_character_to_acl(acl_name, eve_character, old_state, new_state, reason):
 
 
 def add_character_to_wanderer(acl_name, eve_character_id, eve_character_name="Unknown"):
-    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
-    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
-    if wanderer_acl_id is None or wanderer_acl_token is None:
+    if WANDERER_ACL_ID is None or WANDERER_ACL_TOKEN is None:
         logger.error(
-            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands."
+            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN app_settings found. Unable to issue API commands."
         )
         return
-    logger.debug(f"Adding {eve_character_name} to Wanderer ACL {wanderer_acl_id}")
+    logger.debug(f"Adding {eve_character_name} to Wanderer ACL {WANDERER_ACL_ID}")
     # Add character
-    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}/members"
-    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{WANDERER_ACL_ID}/members"
+    headers = {"Authorization": f"Bearer {WANDERER_ACL_TOKEN}"}
     payload = {
         "member": {
             "eve_character_id": str(eve_character_id),
@@ -293,7 +288,7 @@ def add_character_to_wanderer(acl_name, eve_character_id, eve_character_name="Un
     r = requests.post(api_url, headers=headers, json=payload)
     if r.status_code != 200:
         logger.error(
-            f"Unable to add character {eve_character_name} to Wanderer ACL {wanderer_acl_id}: {r.status_code}"
+            f"Unable to add character {eve_character_name} to Wanderer ACL {WANDERER_ACL_ID}: {r.status_code}"
         )
 
 
@@ -379,12 +374,9 @@ def sync_wanderer_with_acl_helper(acl_name):
     logger.debug(f"Attempting to synchronize wanderer with ACL '{acl_name}'")
     acl = acl_result[0]
 
-    # Grab Wanderer information from environment
-    wanderer_acl_id = os.getenv("WANDERER_ACL_ID", None)
-    wanderer_acl_token = os.getenv("WANDERER_ACL_TOKEN", None)
-    if wanderer_acl_id is None or wanderer_acl_token is None:
+    if WANDERER_ACL_ID is None or WANDERER_ACL_TOKEN is None:
         logger.error(
-            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN environment variables found. Unable to issue API commands."
+            "No WANDERER_ACL_ID or WANDERER_ACL_TOKEN app_settings found. Unable to issue API commands."
         )
         return
 
@@ -400,12 +392,12 @@ def sync_wanderer_with_acl_helper(acl_name):
     id_to_name.update(dict(auth_char_tuples))
 
     # Pull set of all characters on Wanderer ACL
-    api_url = f"https://wanderer.eveuniversity.org/api/acls/{wanderer_acl_id}"
-    headers = {"Authorization": f"Bearer {wanderer_acl_token}"}
+    api_url = f"https://wanderer.eveuniversity.org/api/acls/{WANDERER_ACL_ID}"
+    headers = {"Authorization": f"Bearer {WANDERER_ACL_TOKEN}"}
     r = requests.get(api_url, headers=headers)
     if r.status_code != 200:
         logger.error(
-            f"Unable to retrieve Wanderer ACL with ID {wanderer_acl_id}: {r.status_code}"
+            f"Unable to retrieve Wanderer ACL {WANDERER_ACL_ID}: {r.status_code}"
         )
         return
     response = r.json()
