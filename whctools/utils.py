@@ -232,7 +232,7 @@ def send_welcome_message(char):
         logger.debug(f"Sending welcome message to channel: {channel_id}")
 
         # discord ID of channel
-        msg = f"<@{discord_usr_id}> Welcome to WHC!"
+        msg = f"<@{discord_usr_id}> Welcome to WHC! Please check your in-game mails for some useful links and information."
         send_message(channel_id=channel_id, message=msg)
 
         # User DM
