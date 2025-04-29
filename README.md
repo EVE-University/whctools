@@ -33,3 +33,7 @@ Here's a list of available settings for this app. These settings can be configur
 - **WHCTOOLS_ALLIANCES**:
   - *Description*: Alliance IDs that are allowed to apply ACLs controlled by this tool
   - *Default*: `WHCTOOLS_ALLIANCES = [937872513, 99010193]`
+
+- **DISCORD_WELCOME_MAIL_CHANNEL**:
+  - *Description*: Channel which WHC Application acception notifications are sent to
+  - *Default*: `DISCORD_WELCOME_MAIL_CHANNEL = [1344359332791451730]`
