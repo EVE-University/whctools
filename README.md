@@ -36,4 +36,4 @@ Here's a list of available settings for this app. These settings can be configur
 
 - **DISCORD_WELCOME_MAIL_CHANNEL**:
   - *Description*: Channel which WHC Application acception notifications are sent to
-  - *Default*: `DISCORD_WELCOME_MAIL_CHANNEL = [1344359332791451730]`
+  - *Default*: `DISCORD_WELCOME_MAIL_CHANNEL = [706644882436915260]`
