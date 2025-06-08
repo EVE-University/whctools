@@ -1,4 +1,6 @@
 import datetime
+import functools
+import threading
 
 import requests
 from memberaudit.models import Character as MACharacter
@@ -233,7 +235,11 @@ def send_welcome_message(char):
 
         # discord ID of channel
         msg = f"<@{discord_usr_id}> Welcome to WHC! Please check your in-game mails for some useful links and information."
-        send_message(channel_id=channel_id, message=msg)
+
+        threading.Thread(
+            daemon=True,  # never blocks process exit
+            target=functools.partial(send_message, channel_id=channel_id, message=msg),
+        ).start()
 
         # User DM
         # msg = "Welcome to WHC"
