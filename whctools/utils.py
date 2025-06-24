@@ -24,7 +24,12 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from whctools import __title__
-from whctools.app_settings import ALLOWED_ALLIANCES, WANDERER_ACL_ID, WANDERER_ACL_TOKEN
+from whctools.app_settings import (
+    ALLOWED_ALLIANCES,
+    ALLOWED_CORPORATIONS,
+    WANDERER_ACL_ID,
+    WANDERER_ACL_TOKEN,
+)
 from whctools.models import (
     Acl,
     ACLHistory,
@@ -56,7 +61,9 @@ def is_main_eve_character(eve_character):
 
 
 def is_character_in_allowed_corp(eve_character):
-    return eve_character.alliance_id in ALLOWED_ALLIANCES
+    return (eve_character.alliance_id in ALLOWED_ALLIANCES) or (
+        eve_character.corporation_id in ALLOWED_CORPORATIONS
+    )
 
 
 def get_corp_requirements_message():
@@ -65,7 +72,7 @@ def get_corp_requirements_message():
     """
     # Since we can have arbitrarily complex conditions, it's useful to have a programmatically-defined descriptor.
     # FIXME: sync with app_settings
-    return "Character must be in either the Ivy League or Ivy League Alt Alliance."
+    return "Character must be in Ivy League, Ivy League Alt Alliance, or Ivy League Alliance Holdings."
 
 
 def remove_character_from_community(app, new_state, reason, reject_time):

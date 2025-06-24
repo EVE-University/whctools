@@ -6,20 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('eveonline', '0017_alliance_and_corp_names_are_not_unique'),
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('whctools', '0007_add_groups_to_acl'),
+        ("eveonline", "0017_alliance_and_corp_names_are_not_unique"),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("whctools", "0007_add_groups_to_acl"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='acl',
-            name='characters',
-            field=models.ManyToManyField(blank=True, to='eveonline.evecharacter'),
+            model_name="acl",
+            name="characters",
+            field=models.ManyToManyField(blank=True, to="eveonline.evecharacter"),
         ),
         migrations.AlterField(
-            model_name='acl',
-            name='groups',
-            field=models.ManyToManyField(blank=True, to='auth.group'),
+            model_name="acl",
+            name="groups",
+            field=models.ManyToManyField(blank=True, to="auth.group"),
         ),
     ]

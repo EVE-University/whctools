@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('whctools', '0001_initial'),
+        ("whctools", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='applications',
-            name='reject_reason',
-            field=models.IntegerField(choices=[(0, 'Not Rejected'), (1, 'Insufficient Skills'), (2, 'Withdrawn Application'), (3, 'Removed From Community'), (4, 'Left Alliance'), (99, 'Undisclosed')], default=0),
+            model_name="applications",
+            name="reject_reason",
+            field=models.IntegerField(
+                choices=[
+                    (0, "Not Rejected"),
+                    (1, "Insufficient Skills"),
+                    (2, "Withdrawn Application"),
+                    (3, "Removed From Community"),
+                    (4, "Left Alliance"),
+                    (99, "Undisclosed"),
+                ],
+                default=0,
+            ),
         ),
     ]

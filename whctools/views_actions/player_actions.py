@@ -44,7 +44,9 @@ def submit_application(request, char_id):
 
     # Check if character is in a valid corp/alliance
     if not is_character_in_allowed_corp(eve_char_application.eve_character):
-        logger.debug(f"Character {eve_char_application} applied but is in an invalid corp.")
+        logger.debug(
+            f"Character {eve_char_application} applied but is in an invalid corp."
+        )
         return "This character isn't in an approved corp/alliance."
 
     # If this is a new main application, queue up a forced memberaudit update

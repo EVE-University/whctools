@@ -9,4 +9,4 @@ class WhctoolsConfig(AppConfig):
     verbose_name = "WHC tools V" + __version__
 
     def ready(self):
-        import whctools.signals
+        import whctools.signals  # noqa: F401

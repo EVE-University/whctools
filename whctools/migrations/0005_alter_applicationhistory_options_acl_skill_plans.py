@@ -6,18 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('memberaudit', '0011_add_standings_index'),
-        ('whctools', '0004_alter_applications_reject_reason_applicationhistory'),
+        ("memberaudit", "0011_add_standings_index"),
+        ("whctools", "0004_alter_applications_reject_reason_applicationhistory"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='applicationhistory',
-            options={'ordering': ['date_of_change'], 'verbose_name_plural': 'Application Log'},
+            name="applicationhistory",
+            options={
+                "ordering": ["date_of_change"],
+                "verbose_name_plural": "Application Log",
+            },
         ),
         migrations.AddField(
-            model_name='acl',
-            name='skill_plans',
-            field=models.ManyToManyField(to='memberaudit.skillset'),
+            model_name="acl",
+            name="skill_plans",
+            field=models.ManyToManyField(to="memberaudit.skillset"),
         ),
     ]
