@@ -7,8 +7,8 @@ from django.dispatch import receiver
 from allianceauth.authentication.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 
-from .app_settings import ALLOWED_ALLIANCES
 from .tasks import process_character_leaving_IVY
+from .utils import is_character_in_allowed_corp
 
 logger = get_extension_logger(__name__)
 
@@ -18,7 +18,7 @@ def leaves_uni(sender, instance, raw, using, update_fields, **kwargs):
     try:
         if instance.pk:
 
-            if instance.alliance_id not in ALLOWED_ALLIANCES:
+            if is_character_in_allowed_corp(instance):
                 logger.debug(
                     f"WHCTools Signal Character: {instance.character_name} has left IVY/IVY-A - spawning task to cleanup acl/applications"
                 )

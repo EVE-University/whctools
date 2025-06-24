@@ -6,13 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('whctools', '0005_alter_applicationhistory_options_acl_skill_plans'),
+        ("whctools", "0005_alter_applicationhistory_options_acl_skill_plans"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='acl',
-            old_name='skill_plans',
-            new_name='skill_sets',
+            model_name="acl",
+            old_name="skill_plans",
+            new_name="skill_sets",
         ),
     ]
