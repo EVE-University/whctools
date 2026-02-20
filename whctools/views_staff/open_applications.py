@@ -1,4 +1,5 @@
-from memberaudit.models import Character
+from corptools.models import CharacterAudit
+from corptools.models.skills import Skill, SkillList
 
 from allianceauth.eveonline.models import EveCharacter
 
@@ -21,7 +22,7 @@ from app_utils.logging import LoggerAddTag
 from whctools import __title__
 from whctools.models import Acl, Applications
 from whctools.utils import (
-    get_last_ma_update_time,
+    get_last_ca_update_time,
     get_welcome_mail,
     is_main_eve_character,
     update_welcome_mail,
@@ -34,7 +35,7 @@ def all_characters_currently_with_open_apps():
 
     chars_applied = (
         Applications.objects.filter(member_state=Applications.MembershipStates.APPLIED)
-        .select_related("eve_character__memberaudit_character")
+        .select_related("eve_character__characteraudit")
         .order_by("last_updated")
     )
 
@@ -59,7 +60,7 @@ def all_characters_currently_with_open_apps():
         is_main = is_main_eve_character(eve_char)
         is_main_char.append(is_main)
 
-        last_ma_update = get_last_ma_update_time(eve_char)  # returns 1970 if error
+        last_ma_update = get_last_ca_update_time(eve_char)
         app_applied_at = app.last_updated
         ma_age = (app_applied_at - last_ma_update).total_seconds()
         ma_is_valid.append(ma_age < ESI_TASK_TIMEOUT_SECONDS)
@@ -80,7 +81,7 @@ def getSkills(eve_char_id):
         eve_character__character_id=eve_char_id
     ).select_related("eve_character")[0]
 
-    existing_acls = Acl.objects.all()
+    skill_lists = list(SkillList.objects.all().order_by("name"))
     eve_char: EveCharacter = application.eve_character
     user = get_user_from_evecharacter(eve_char)
     all_characters = get_all_characters_from_user(user)
@@ -89,24 +90,33 @@ def getSkills(eve_char_id):
 
     for char in all_characters:
         try:
-            ma_character: Character = char.memberaudit_character
+            ca_character: CharacterAudit = eve_char.characteraudit
+            skills_qs = (
+                Skill.objects.filter(character=ca_character)
+                .select_related("skill_name")
+                .only("trained_skill_level", "skill_name__name")
+            )
+            trained_levels = {s.skill_name.name: int(s.trained_skill_level) for s in skills_qs}
         except Exception as e:
             logger.error(
                 f"Could not get MA Character for {char} belonging to {eve_char} - error: {e}"
             )
             continue
         else:
-            last_update = get_last_ma_update_time(eve_char).strftime("%b %d, %Y")
+            last_update = ca_character.last_update_skills.strftime("%b %d, %Y")
             skillset_status = {}
 
-            ma_character.update_skill_sets()
-            for acl in existing_acls:
-                for skillset in acl.skill_sets.all():
-                    skillset_status[skillset.name] = (
-                        ma_character.skill_set_checks.filter(skill_set=skillset)
-                        .first()
-                        .can_fly
-                    )
+            for skill_list in skill_lists:
+                required_skills = skill_list.get_skills()
+
+                has_required_level = False
+                for required_skill_name, required_level in required_skills.items():
+                    trained = trained_levels.get(required_skill_name, 0)
+                    if int(trained) >= int(required_level):
+                        has_required_level = True
+
+                skillset_status[skill_list.name] = has_required_level
+
             alt_data[char.character_name] = (last_update, skillset_status)
 
     return {

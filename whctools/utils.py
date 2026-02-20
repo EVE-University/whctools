@@ -3,11 +3,10 @@ import functools
 import threading
 
 import requests
-from memberaudit.models import Character as MACharacter
 
-# from memberaudit.tasks import update_character as ma_update_character
-# For MA 3.x, we have more granularity.
-from memberaudit.tasks import update_character_skills as ma_update_character_skills
+from corptools.models import CharacterAudit
+from corptools.tasks import character
+from corptools.models.skills import Skill
 
 from django.apps import apps
 from django.conf import settings
@@ -476,37 +475,36 @@ def generate_raw_copy_for_acl(sorted_char_list: list):
     return "\n".join(output)
 
 
-def force_update_memberaudit(eve_character):
-    logger.debug(f"Forcing memberaudit update for character {eve_character}")
+def force_update_corptools(eve_character):
+    """Queue a CorpTools refresh for this character."""
+    logger.debug(f"Forcing CorpTools update for character {eve_character}")
     try:
-        ma_char = MACharacter.objects.get(eve_character=eve_character)
-    except ObjectDoesNotExist:
-        ma_char = None
-    if ma_char is not None:
-        ma_char.reset_update_section("skills")
-        ma_update_character_skills.apply_async(
-            kwargs={"character_pk": ma_char.pk, "force_update": True}, priority=3
-        )
-    else:
+        character.update_character.apply_async(
+            args=[eve_character.character_id],
+            kwargs={
+                "force_refresh": True
+            },
+            priority=3)
+    except Exception as ex:
+        logger.error(f"Failed to queue CorpTools update for {eve_character}: {ex}")
         notify.warning(
-            f"{eve_character.character_name} is not registered with Member Audit.",
+            f"Could not queue CorpTools update for {eve_character.character_name}.",
         )
 
 
-def get_last_ma_update_time(eve_character):
-    """Return a datetime for when memberaudit was last successfully updated with skill data"""
+def get_last_ca_update_time(eve_character):
+    """Return a datetime for when corptools was last successfully updated with skill data"""
 
-    logger.info("get_last_ma_update_time")
+    logger.info("get_last_ca_update_time")
     try:
-        ma_char = eve_character.memberaudit_character
+        ca_character: CharacterAudit = eve_character.characteraudit
         # Also check it wasn't an error last time
-        is_status_okay = ma_char.is_update_status_ok()
-        last_ma_update = ma_char.update_status_set.get(
-            section=MACharacter.UpdateSection.SKILLS
-        ).update_finished_at
-        if is_status_okay:
-            return last_ma_update
+        has_skills = Skill.objects.filter(character=ca_character).exists()
+
+        if has_skills:
+            return ca_character.last_update_skills
     except Exception:
         pass
+
     # If something goes wrong, return an unreasonably old datetime.
     return datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)

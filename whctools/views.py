@@ -3,7 +3,8 @@
 import json
 from datetime import timedelta
 
-from memberaudit.models import Character
+from corptools.models import CharacterAudit
+from corptools.models.skills import Skill
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
@@ -69,7 +70,7 @@ def index(request):
     """Render index view."""
     owned_chars_query = (
         EveCharacter.objects.filter(character_ownership__user=request.user)
-        .select_related("memberaudit_character", "applications")
+        .select_related("applications")
         .order_by("character_name")
     )
     auth_characters = []
@@ -108,9 +109,9 @@ def index(request):
             Applications.objects.update_or_create(eve_character=eve_char)
 
         try:
-            macharacter: Character = eve_char.memberaudit_character
+            ca_character: CharacterAudit = eve_char.characteraudit
             application: Applications = eve_char.applications
-        except AttributeError:
+        except CharacterAudit.DoesNotExist:
             unregistered_chars.append(
                 {
                     "char_name": eve_char.character_name,
@@ -140,8 +141,7 @@ def index(request):
                     "alliance_name": eve_char.alliance_name,
                     "char_id": eve_char.character_id,
                     "portrait_url": eve_char.portrait_url(64),
-                    "character": macharacter,
-                    "is_shared": macharacter.is_shared,
+                    "has_skills": Skill.objects.filter(character=ca_character).exists(),
                     "is_main": main_character_id == eve_char.character_id,
                     "is_main_member": is_main_accepted,
                     "is_in_approved_corp": is_in_approved_corp,

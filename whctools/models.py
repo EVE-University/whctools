@@ -1,6 +1,6 @@
 """Models."""
 
-from memberaudit.models import SkillSet
+from corptools.models.skills import SkillList
 
 from django import forms
 from django.contrib.auth.models import Group
@@ -116,7 +116,6 @@ class Acl(models.Model):
     name = models.CharField(max_length=255, null=False, blank=True, primary_key=True)
     description = models.TextField(null=True, blank=True)
     characters = models.ManyToManyField(EveCharacter, blank=True)
-    skill_sets = models.ManyToManyField(SkillSet)
     # Each ACL can be associated with zero or more groups. When a WHC application is
     # accepted to the ACL, the user is also added to all groups. When the user's
     # last character is removed from the ACL, the user is removed from all groups.

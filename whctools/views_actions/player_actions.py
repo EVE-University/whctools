@@ -8,7 +8,7 @@ from whctools import __title__
 from ..app_settings import TRANSIENT_REJECT
 from ..models import ACLHistory, Applications
 from ..utils import (
-    force_update_memberaudit,
+    force_update_corptools,
     is_character_in_allowed_corp,
     log_application_change,
     remove_character_from_acl,
@@ -49,12 +49,12 @@ def submit_application(request, char_id):
         )
         return "This character isn't in an approved corp/alliance."
 
-    # If this is a new main application, queue up a forced memberaudit update
+    # If this is a new main application, queue up a forced corptools update
     main_eve_char = eve_char_application.get_main_character()
     if main_eve_char is None:
         return "This character has no Auth profile, which should not be possible. Please contact @webservices on discord."
     if eve_char_application == main_eve_char.applications:
-        force_update_memberaudit(eve_char_application.eve_character)
+        force_update_corptools(eve_char_application.eve_character)
 
     eve_char_application.member_state = Applications.MembershipStates.APPLIED
     eve_char_application.save()
